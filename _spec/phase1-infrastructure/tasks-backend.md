@@ -22,7 +22,7 @@
 
 ## Phase 0 — Notion 資料庫建置（~1h，人工操作）
 
-### T01 — 建立 Notion 三張資料庫並設定欄位 ⬜
+### T01 — 建立 Notion 三張資料庫並設定欄位 ✅
 
 依照 design.md 的資料模型，**在 Notion 手動操作**：
 
@@ -53,7 +53,7 @@
 
 ## Phase 1 — send_spec.py 實作（~2h）
 
-### T02 — 實作 Notion 查詢冪等檢查函式 ⬜
+### T02 — 實作 Notion 查詢冪等檢查函式 ✅
 
 **依賴**：T01
 
@@ -75,7 +75,7 @@ def check_slug_exists(notion_token: str, database_id: str, slug: str) -> bool
 
 ---
 
-### T03 — 實作 send_spec.py 主流程 ⬜
+### T03 — 實作 send_spec.py 主流程 ✅
 
 **依賴**：T02
 
@@ -98,7 +98,7 @@ def check_slug_exists(notion_token: str, database_id: str, slug: str) -> bool
 
 ---
 
-### T04 — 建立 .env.example 與執行說明 ⬜
+### T04 — 建立 .env.example 與執行說明 ✅
 
 **依賴**：T03
 
