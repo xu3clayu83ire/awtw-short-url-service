@@ -27,11 +27,11 @@
 | 步驟 | 1. 進入 `D:\06_Workspace\Workspace_GitHub\xu3clayu83ire\n8n\` <br>2. 確認 `.env` 已填入 `WORKSPACE_ROOT`、`N8N_USER`、`N8N_PASSWORD` <br>3. 執行 `docker compose up -d` <br>4. 瀏覽器開啟 `http://localhost:5678` |
 | 預期結果 | 顯示 n8n 登入畫面，可完成帳號建立 |
 | 實際結果 | （執行後填寫） |
-| Pass / Fail | ⬜ |
+| Pass / Fail | ✅ |
 
 ---
 
-### QA-T02 — 驗收 AC2：Hugo Book 本地預覽 ⬜
+### QA-T02 — 驗收 AC2：Hugo Book 本地預覽 ✅
 
 **對應**：spec.md AC2、tasks-devops.md T03、T04
 
@@ -41,11 +41,11 @@
 | 步驟 | 1. 進入 `awtw-short-url-service\hugo-docs\` <br>2. 執行 `hugo server` <br>3. 瀏覽器開啟 `http://localhost:1313` |
 | 預期結果 | 文件站首頁正常顯示，站台標題正確，左側目錄結構存在，無錯誤訊息 |
 | 實際結果 | （執行後填寫） |
-| Pass / Fail | ⬜ |
+| Pass / Fail | ✅ |
 
 ---
 
-### QA-T03 — 驗收 AC3：Notion 資料庫結構 ⬜
+### QA-T03 — 驗收 AC3：Notion 資料庫結構 ✅
 
 **對應**：spec.md AC3、tasks-backend.md T01
 
@@ -91,11 +91,11 @@
 
 | AC | 項目 | 結果 |
 |----|------|------|
-| AC1 | n8n 容器啟動 | ⬜ |
-| AC2 | Hugo Book 預覽 | ⬜ |
-| AC3 | Notion DB 結構 | ⬜ |
-| AC4 | send_spec.py 正常推送 | ⬜ |
-| AC5 | send_spec.py 冪等性 | ⬜ |
+| AC1 | n8n 容器啟動 | ✅ |
+| AC2 | Hugo Book 預覽 | ✅ |
+| AC3 | Notion DB 結構 | ✅ |
+| AC4 | send_spec.py 正常推送 | ⏳ 等 Phase 2 |
+| AC5 | send_spec.py 冪等性 | ⏳ 等 Phase 2 |
 
 全部 Pass 後，Phase 1 驗收完成，可進入 Phase 2。
 

@@ -21,7 +21,7 @@
 
 ## Phase 0 — n8n 容器建置（~1h）
 
-### T01 — 建立 n8n 目錄與 docker-compose.yml ⬜
+### T01 — 建立 n8n 目錄與 docker-compose.yml ✅
 
 在 `D:\06_Workspace\Workspace_GitHub\xu3clayu83ire\n8n\` 建立 `docker-compose.yml`，內容依 design.md 規格：
 - n8n 穩定版映像
@@ -39,7 +39,7 @@
 
 ---
 
-### T02 — 建立 .env 範本與設定說明文件 ⬜
+### T02 — 建立 .env 範本與設定說明文件 ✅
 
 **依賴**：T01
 
