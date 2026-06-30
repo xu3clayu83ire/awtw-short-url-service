@@ -23,7 +23,11 @@
 
 ## 技術選型決策
 
-<!-- 在此記錄框架、資料庫、第三方服務的選型決策 -->
+### [2026-06-30] Jira 專案設定
+- **選項**：Project key XAM（idea 草稿預設）/ ASUS（實際建立）
+- **決定**：ASUS，專案名稱 awtw-short-url-service，網址 https://prostyliu.atlassian.net
+- **理由**：Jira 建立時 key 已設為 ASUS，票號格式為 ASUS-1、ASUS-2
+- **取捨**：idea 草稿中所有 XAM 字樣均以 ASUS 取代
 
 ---
 
