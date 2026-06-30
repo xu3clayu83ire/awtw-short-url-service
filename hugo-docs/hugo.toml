@@ -1,0 +1,9 @@
+baseURL = "http://localhost:1313"
+title = "awtw-short-url-service 技術文件"
+theme = "hugo-book"
+defaultContentLanguage = "zh-tw"
+
+[params]
+  BookMenuFromFiles = true
+  BookToC = true
+  BookSearch = true

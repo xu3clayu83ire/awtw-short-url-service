@@ -60,7 +60,7 @@
 
 ## Phase 1 — Hugo Book 初始化（~1h）
 
-### T03 — 初始化 Hugo Book 專案並引入主題 ⬜
+### T03 — 初始化 Hugo Book 專案並引入主題 ✅
 
 在 `awtw-short-url-service\hugo-docs\` 執行：
 1. `hugo new site hugo-docs`
@@ -77,7 +77,7 @@
 
 ---
 
-### T04 — 設定 config.toml ⬜
+### T04 — 設定 config.toml ✅
 
 **依賴**：T03
 
