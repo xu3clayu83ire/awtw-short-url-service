@@ -389,7 +389,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst output = (item.stdout ?? '') + '\\n' + (item.stderr ?? '');\n\n// 環境錯誤（缺套件、模組載入失敗、語法錯誤）不算是有效的 TDD 紅燈，必須跟「測試斷言正確失敗」分開判斷，\n// 否則 exitCode !== 0 會把兩種情況混為一談，誤判環境問題為紅燈通過。\nconst envErrorPatterns = [\n  /Failed to load url/i,\n  /Cannot find module/i,\n  /Cannot find package/i,\n  /ERR_MODULE_NOT_FOUND/i,\n  /SyntaxError/i,\n  /ENOENT.*package\\.json/i,\n];\n\nconst matched = envErrorPatterns.find(re => re.test(output));\nif (matched) {\n  throw new Error(`測試執行失敗是環境問題，不是有效的 TDD 紅燈（比對到樣式：${matched}）。輸出片段：${output.slice(0, 500)}`);\n}\n\nreturn [{ json: item }];"
+        "jsCode": "const item = $input.first().json;\nconst output = (item.stdout ?? '') + '\\n' + (item.stderr ?? '');\n\n// 2026-07-05 修正：「Failed to load url ../src/xxx」在紅燈階段是正常現象（實作檔案本來就還沒寫），\n// 不能一律當環境錯誤。真正的環境錯誤是「找不到的是套件名稱」（不是本地相對路徑）。\nfunction isLocalPath(spec) { return /^[./]/.test((spec || '').trim()); }\n\nconst failedToLoadMatch = output.match(/Failed to load url ([^\\s(]+)/i);\nconst cannotFindMatch = output.match(/Cannot find module ['\"]?([^'\"\\s]+)['\"]?/i);\nconst target = failedToLoadMatch?.[1] || cannotFindMatch?.[1];\nconst isBarePackageSpecifier = Boolean(target) && !isLocalPath(target);\n\nconst hardEnvErrorPatterns = [\n  /Cannot find package/i,\n  /ERR_MODULE_NOT_FOUND/i,\n  /SyntaxError/i,\n  /ENOENT.*package\\.json/i,\n];\nconst hasHardEnvError = hardEnvErrorPatterns.some(re => re.test(output));\n\nif (hasHardEnvError || isBarePackageSpecifier) {\n  throw new Error(`測試執行失敗是環境問題，不是有效的 TDD 紅燈（缺少套件或環境錯誤：${target || '未知'}）。輸出片段：${output.slice(0, 500)}`);\n}\n\nreturn [{ json: item }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -399,7 +399,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst output = (item.stdout ?? '') + '\\n' + (item.stderr ?? '');\n\nconst envErrorPatterns = [\n  /Failed to load url/i,\n  /Cannot find module/i,\n  /Cannot find package/i,\n  /ERR_MODULE_NOT_FOUND/i,\n  /SyntaxError/i,\n  /ENOENT.*package\\.json/i,\n];\n\nconst matched = envErrorPatterns.find(re => re.test(output));\nif (matched) {\n  throw new Error(`測試執行失敗是環境問題，不是有效的 TDD 綠燈（比對到樣式：${matched}）。輸出片段：${output.slice(0, 500)}`);\n}\n\nreturn [{ json: item }];"
+        "jsCode": "const item = $input.first().json;\nconst output = (item.stdout ?? '') + '\\n' + (item.stderr ?? '');\n\nfunction isLocalPath(spec) { return /^[./]/.test((spec || '').trim()); }\n\nconst failedToLoadMatch = output.match(/Failed to load url ([^\\s(]+)/i);\nconst cannotFindMatch = output.match(/Cannot find module ['\"]?([^'\"\\s]+)['\"]?/i);\nconst target = failedToLoadMatch?.[1] || cannotFindMatch?.[1];\nconst isBarePackageSpecifier = Boolean(target) && !isLocalPath(target);\n\nconst hardEnvErrorPatterns = [\n  /Cannot find package/i,\n  /ERR_MODULE_NOT_FOUND/i,\n  /SyntaxError/i,\n  /ENOENT.*package\\.json/i,\n];\nconst hasHardEnvError = hardEnvErrorPatterns.some(re => re.test(output));\n\nif (hasHardEnvError || isBarePackageSpecifier) {\n  throw new Error(`測試執行失敗是環境問題，不是有效的 TDD 綠燈（缺少套件或環境錯誤：${target || '未知'}）。輸出片段：${output.slice(0, 500)}`);\n}\n\nreturn [{ json: item }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
