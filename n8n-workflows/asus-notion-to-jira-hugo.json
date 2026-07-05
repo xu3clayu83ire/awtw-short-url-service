@@ -114,7 +114,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $json.slug + '\\\\tasks-backend.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $json.slug + '\\\\tasks-backend.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -130,7 +130,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T04a Parse And Validate Inbox Lines').first().json.slug + '\\\\tasks-devops.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('T04a Parse And Validate Inbox Lines').first().json.slug + '\\\\tasks-devops.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -146,7 +146,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T04a Parse And Validate Inbox Lines').first().json.slug + '\\\\tasks-qa.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('T04a Parse And Validate Inbox Lines').first().json.slug + '\\\\tasks-qa.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -158,7 +158,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const parsed = $('T04a Parse And Validate Inbox Lines').first().json;\nconst fileContents = {\n  'tasks-backend.md': $('T04b1 Read tasks-backend.md (inbox)').first().json.content ?? '',\n  'tasks-devops.md': $('T04b2 Read tasks-devops.md (inbox)').first().json.content ?? '',\n  'tasks-qa.md': $('T04b3 Read tasks-qa.md (inbox)').first().json.content ?? '',\n};\n\nfunction maxTaskId(content) {\n  const matches = [...content.matchAll(/### T(\\d+) —/g)];\n  if (matches.length === 0) return 0;\n  return Math.max(...matches.map(m => parseInt(m[1], 10)));\n}\n\nconst nextNum = {};\nfor (const f of Object.keys(fileContents)) nextNum[f] = maxTaskId(fileContents[f]) + 1;\n\nconst appended = {};\nconst results = [];\n\nfor (const task of parsed.valid) {\n  const file = task.targetFile;\n  const num = nextNum[file]++;\n  const taskId = 'T' + String(num).padStart(2, '0');\n  const depBlock = task.dependsOn ? `\\n\\n**依賴**：${task.dependsOn}` : '';\n  const execLabel = task.execMode === 'AI' ? '🤖 AI 執行' : '👤 手動執行';\n  const block = `\\n\\n### ${taskId} — ${task.title} ⬜　${execLabel}${depBlock}\\n\\n> 由 Notion 新增，詳細任務描述待補充\\n\\n**完成定義**：\\n- 測試命名：\\`${task.tdd}\\`\\n`;\n  appended[file] = (appended[file] ?? '') + block;\n  results.push({ file, taskId, title: task.title });\n}\n\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service/_spec/' + parsed.slug + '/';\nconst fileUpdates = Object.keys(appended).map(file => ({\n  json: {\n    file,\n    filePath: basePath + file,\n    newContent: (fileContents[file] ?? '').replace(/\\s*$/, '') + appended[file] + '\\n',\n  }\n}));\n\nreturn fileUpdates;"
+        "jsCode": "const parsed = $('T04a Parse And Validate Inbox Lines').first().json;\nconst fileContents = {\n  'tasks-backend.md': $('T04b1 Read tasks-backend.md (inbox)').first().json.content ?? '',\n  'tasks-devops.md': $('T04b2 Read tasks-devops.md (inbox)').first().json.content ?? '',\n  'tasks-qa.md': $('T04b3 Read tasks-qa.md (inbox)').first().json.content ?? '',\n};\n\nfunction maxTaskId(content) {\n  const matches = [...content.matchAll(/### T(\\d+) —/g)];\n  if (matches.length === 0) return 0;\n  return Math.max(...matches.map(m => parseInt(m[1], 10)));\n}\n\nconst nextNum = {};\nfor (const f of Object.keys(fileContents)) nextNum[f] = maxTaskId(fileContents[f]) + 1;\n\nconst appended = {};\nconst results = [];\n\nfor (const task of parsed.valid) {\n  const file = task.targetFile;\n  const num = nextNum[file]++;\n  const taskId = 'T' + String(num).padStart(2, '0');\n  const depBlock = task.dependsOn ? `\\n\\n**依賴**：${task.dependsOn}` : '';\n  const execLabel = task.execMode === 'AI' ? '🤖 AI 執行' : '👤 手動執行';\n  const block = `\\n\\n### ${taskId} — ${task.title} ⬜　${execLabel}${depBlock}\\n\\n> 由 Notion 新增，詳細任務描述待補充\\n\\n**完成定義**：\\n- 測試命名：\\`${task.tdd}\\`\\n`;\n  appended[file] = (appended[file] ?? '') + block;\n  results.push({ file, taskId, title: task.title });\n}\n\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent/_spec/' + parsed.slug + '/';\nconst fileUpdates = Object.keys(appended).map(file => ({\n  json: {\n    file,\n    filePath: basePath + file,\n    newContent: (fileContents[file] ?? '').replace(/\\s*$/, '') + appended[file] + '\\n',\n  }\n}));\n\nreturn fileUpdates;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -215,7 +215,7 @@
         "url": "http://host.docker.internal:3001/run",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ command: 'git add ' + $json.files.join(' ') + ' && git commit -m ' + JSON.stringify('docs(tasks): Notion 新增 ' + $('T04a Parse And Validate Inbox Lines').first().json.slug + ' 任務'), cwd: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service' }) }}",
+        "jsonBody": "={{ JSON.stringify({ command: 'git add ' + $json.files.join(' ') + ' && git commit -m ' + JSON.stringify('docs(tasks): Notion 新增 ' + $('T04a Parse And Validate Inbox Lines').first().json.slug + ' 任務'), cwd: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -321,7 +321,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $json.Slug + '\\\\tasks-backend.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $json.Slug + '\\\\tasks-backend.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -337,7 +337,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\tasks-devops.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\tasks-devops.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -353,7 +353,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\tasks-qa.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\tasks-qa.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -401,7 +401,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst perTask = data.perTask;\n\nconst byFile = {};\nfor (const t of perTask) {\n  if (!t.sourceFile) continue;\n  byFile[t.sourceFile] = byFile[t.sourceFile] || [];\n  byFile[t.sourceFile].push(t);\n}\n\nconst fileContents = {\n  'tasks-backend.md': $('T06 Read Tasks Backend').first().json.content ?? '',\n  'tasks-devops.md': $('T06b Read Tasks DevOps').first().json.content ?? '',\n  'tasks-qa.md': $('T06c Read Tasks QA').first().json.content ?? '',\n};\n\nconst updates = [];\nfor (const [file, tasks] of Object.entries(byFile)) {\n  let content = fileContents[file] ?? '';\n  for (const t of tasks) {\n    const re = new RegExp('(### ' + t.taskId + ' — .+?)⬜(.*)$', 'm');\n    if (!re.test(content)) continue;\n    content = content.replace(re, (m, before, after) => before + '⬜' + after + `　(${t.jiraKey})`);\n  }\n  updates.push({\n    file,\n    filePath: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service/_spec/' + data.slug + '/' + file,\n    content,\n  });\n}\n\nreturn updates.map(u => ({ json: u }));"
+        "jsCode": "const data = $input.first().json;\nconst perTask = data.perTask;\n\nconst byFile = {};\nfor (const t of perTask) {\n  if (!t.sourceFile) continue;\n  byFile[t.sourceFile] = byFile[t.sourceFile] || [];\n  byFile[t.sourceFile].push(t);\n}\n\nconst fileContents = {\n  'tasks-backend.md': $('T06 Read Tasks Backend').first().json.content ?? '',\n  'tasks-devops.md': $('T06b Read Tasks DevOps').first().json.content ?? '',\n  'tasks-qa.md': $('T06c Read Tasks QA').first().json.content ?? '',\n};\n\nconst updates = [];\nfor (const [file, tasks] of Object.entries(byFile)) {\n  let content = fileContents[file] ?? '';\n  for (const t of tasks) {\n    const re = new RegExp('(### ' + t.taskId + ' — .+?)⬜(.*)$', 'm');\n    if (!re.test(content)) continue;\n    content = content.replace(re, (m, before, after) => before + '⬜' + after + `　(${t.jiraKey})`);\n  }\n  updates.push({\n    file,\n    filePath: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent/_spec/' + data.slug + '/' + file,\n    content,\n  });\n}\n\nreturn updates.map(u => ({ json: u }));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -458,7 +458,7 @@
         "url": "http://host.docker.internal:3001/run",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ command: 'git add ' + $json.files.join(' ') + ' && git commit -m ' + JSON.stringify('docs(tasks): 回填 ' + $('T14 Pair Jira Keys With Tasks').first().json.slug + ' 票號 (' + $('T14 Pair Jira Keys With Tasks').first().json.perTask.map(t => t.taskId + ':' + t.jiraKey).join(', ') + ')'), cwd: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service' }) }}",
+        "jsonBody": "={{ JSON.stringify({ command: 'git add ' + $json.files.join(' ') + ' && git commit -m ' + JSON.stringify('docs(tasks): 回填 ' + $('T14 Pair Jira Keys With Tasks').first().json.slug + ' 票號 (' + $('T14 Pair Jira Keys With Tasks').first().json.perTask.map(t => t.taskId + ':' + t.jiraKey).join(', ') + ')'), cwd: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -524,7 +524,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\spec.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\spec.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -540,7 +540,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\design.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\design.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -552,7 +552,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const phase = $('T02 Parse Notion Fields').first().json;\nconst specContent = $('T09 Read Spec.md').first().json.content ?? '（尚無 spec.md）';\nconst designContent = $('T10 Read Design.md').first().json.content ?? '（尚無 design.md）';\nconst backendTasks = $('T06 Read Tasks Backend').first().json.content ?? '';\nconst devopsTasks = $('T06b Read Tasks DevOps').first().json.content ?? '';\nconst qaTasks = $('T06c Read Tasks QA').first().json.content ?? '';\n\nconst title = phase.Name ?? phase.Slug;\nconst weight = phase.Weight ?? 99;\n\nconst frontMatter = (docTitle) => `---\ntitle: \"${docTitle}\"\nweight: ${weight}\n---\n\n`;\n\nconst indexContent = frontMatter(title) +\n  `## ${title}\\n\\n` +\n  `- [規格文件](spec.md)\\n` +\n  `- [設計文件](design.md)\\n` +\n  `- [任務清單](tasks.md)\\n`;\n\nconst specDoc = frontMatter(title + ' — 規格文件') + specContent;\nconst designDoc = frontMatter(title + ' — 設計文件') + designContent;\nconst tasksDoc = frontMatter(title + ' — 任務清單') +\n  `## Backend\\n\\n${backendTasks}\\n\\n## DevOps\\n\\n${devopsTasks}\\n\\n## QA\\n\\n${qaTasks}\\n`;\n\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service/hugo-docs/content/docs/' + phase.Slug + '/';\n\nreturn [\n  { json: { filePath: basePath + '_index.md', content: indexContent } },\n  { json: { filePath: basePath + 'spec.md', content: specDoc } },\n  { json: { filePath: basePath + 'design.md', content: designDoc } },\n  { json: { filePath: basePath + 'tasks.md', content: tasksDoc } },\n];"
+        "jsCode": "const phase = $('T02 Parse Notion Fields').first().json;\nconst specContent = $('T09 Read Spec.md').first().json.content ?? '（尚無 spec.md）';\nconst designContent = $('T10 Read Design.md').first().json.content ?? '（尚無 design.md）';\nconst backendTasks = $('T06 Read Tasks Backend').first().json.content ?? '';\nconst devopsTasks = $('T06b Read Tasks DevOps').first().json.content ?? '';\nconst qaTasks = $('T06c Read Tasks QA').first().json.content ?? '';\n\nconst title = phase.Name ?? phase.Slug;\nconst weight = phase.Weight ?? 99;\n\nconst frontMatter = (docTitle) => `---\ntitle: \"${docTitle}\"\nweight: ${weight}\n---\n\n`;\n\nconst indexContent = frontMatter(title) +\n  `## ${title}\\n\\n` +\n  `- [規格文件](spec.md)\\n` +\n  `- [設計文件](design.md)\\n` +\n  `- [任務清單](tasks.md)\\n`;\n\nconst specDoc = frontMatter(title + ' — 規格文件') + specContent;\nconst designDoc = frontMatter(title + ' — 設計文件') + designContent;\nconst tasksDoc = frontMatter(title + ' — 任務清單') +\n  `## Backend\\n\\n${backendTasks}\\n\\n## DevOps\\n\\n${devopsTasks}\\n\\n## QA\\n\\n${qaTasks}\\n`;\n\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent/hugo-docs/content/docs/' + phase.Slug + '/';\n\nreturn [\n  { json: { filePath: basePath + '_index.md', content: indexContent } },\n  { json: { filePath: basePath + 'spec.md', content: specDoc } },\n  { json: { filePath: basePath + 'design.md', content: designDoc } },\n  { json: { filePath: basePath + 'tasks.md', content: tasksDoc } },\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
