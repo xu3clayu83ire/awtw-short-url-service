@@ -8,11 +8,13 @@ const PORT = 3001;
 // 只接受本機來源（n8n 容器透過 host.docker.internal 連入）
 function parseBody(req) {
   return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => (body += chunk));
+    const chunks = [];
+    // 多位元組字元（如中文）可能被切在兩個 chunk 邊界中間，
+    // 逐一 chunk toString() 會產生替換字元，必須先 concat 成完整 Buffer 再一次解碼
+    req.on('data', chunk => chunks.push(chunk));
     req.on('end', () => {
       try {
-        resolve(JSON.parse(body));
+        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
       } catch (e) {
         reject(new Error('無法解析 JSON body：' + e.message));
       }
