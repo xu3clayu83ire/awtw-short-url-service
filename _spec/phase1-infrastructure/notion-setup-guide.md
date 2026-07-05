@@ -7,7 +7,7 @@
 
 ## 前置準備
 
-1. 開啟 Notion，建立一個新的 Page，命名為「ADW 工作區」（三張資料庫都放在這個 Page 裡）
+1. 開啟 Notion，建立一個新的 Page，命名為「awtw-short-url-service」（三張資料庫都放在這個 Page 裡，實際頁面已依此命名）
 2. 確認已建立 Internal Integration，取得 Token：
    - Notion 右上角頭像 → Settings → Connections → Develop or manage integrations → New integration
 3. 把 Integration 連結到這個 Page：
@@ -94,5 +94,5 @@
 - [ ] 子表 B「Bug 追蹤池」建立完成
 - [ ] 主表 Relation 欄位 `ADR` 雙向連結「架構決策紀錄」
 - [ ] 主表 Relation 欄位 `Bugs` 雙向連結「Bug 追蹤池」
-- [ ] Integration 已連結到 ADW 工作區 Page
+- [ ] Integration 已連結到 awtw-short-url-service Page
 - [ ] `NOTION_DATABASE_ID` 已記錄備用

@@ -3,7 +3,7 @@
 > 每個任務設計為獨立可驗證，完成後有明確的檢查點。
 > ⬜ 待執行　✅ 已完成
 >
-> 執行方式：🤖 AI 執行（ADW 自動產出程式碼）　👤 手動執行（Console/CLI 操作）
+> 執行方式：🤖 AI 執行（ASUS 自動產出程式碼）　👤 手動執行（Console/CLI 操作）
 
 ## 前置閱讀
 
@@ -15,7 +15,7 @@
 
 ## Phase 0 — GitHub Actions CI 建置（~2h）
 
-### T01 — 建立 CI workflow 檔案 ⬜　🤖 AI 執行
+### T01 — 建立 CI workflow 檔案 ⬜　🤖 AI 執行　(ASUS-102)
 
 在 `.github/workflows/ci.yml` 建立 GitHub Actions workflow，包含：
 - `test` job：`npm ci` + `npm run test`

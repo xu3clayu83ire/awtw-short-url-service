@@ -10,7 +10,7 @@
 
 Phase 4 完成後，main branch 已有人工審核與 CI 把關。Phase 5 的目標是讓 merge 進 main 這個動作自動觸發 AWS 部署，把短網址 API 與 Hugo Book 技術文件站同步上線，不需要任何手動操作。
 
-部署完成後，n8n 自動把兩個服務的 URL 回填到 Notion，並發送 Email 通知 SA。整個 ADW 系統的自動化閉環在此完成。
+部署完成後，n8n 自動把兩個服務的 URL 回填到 Notion，並發送 Email 通知 SA。整個 ASUS 系統的自動化閉環在此完成。
 
 ---
 

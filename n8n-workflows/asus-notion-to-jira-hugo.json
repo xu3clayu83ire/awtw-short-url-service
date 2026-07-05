@@ -2,240 +2,16 @@
   "name": "asus-notion-to-jira-hugo",
   "nodes": [
     {
-      "parameters": {},
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        832,
-        112
-      ],
-      "id": "cecf476d-722e-443a-99eb-77f9140e22e8",
-      "name": "T04a Skip - Jira Key Already Set"
-    },
-    {
-      "parameters": {},
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        1056,
-        -144
-      ],
-      "id": "155fc2f3-6960-4c0e-88bc-eeafd88dbdcc",
-      "name": "T05a Skip - No Tasks To Open"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "4dfde9aa-a7e5-40e0-b9c1-26df9b8b333d",
-              "leftValue": "={{ $json.Jira_Epic_Key.length }}",
-              "rightValue": "0",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "looseTypeValidation": true,
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        656,
-        16
-      ],
-      "id": "03eb9de2-92ce-407e-aa95-0be5a7f5ad5f",
-      "name": "T04 Guard IF - Jira Key Empty"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "546cf4ea-2966-4243-ac7d-6dbbe5e9712b",
-              "leftValue": "={{ $json.Tasks_To_Open.length }}",
-              "rightValue": 0,
-              "operator": {
-                "type": "number",
-                "operation": "gt"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "looseTypeValidation": true,
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        832,
-        -240
-      ],
-      "id": "34c2c990-c1b8-46f9-a4dd-1f4781c7849d",
-      "name": "T05 Guard IF - Has Tasks To Open"
-    },
-    {
-      "parameters": {
-        "project": {
-          "__rl": true,
-          "value": "10000",
-          "mode": "list",
-          "cachedResultName": "awtw-short-url-service"
-        },
-        "issueType": {
-          "__rl": true,
-          "value": "10003",
-          "mode": "list",
-          "cachedResultName": "任務"
-        },
-        "summary": "={{ $json.title }}",
-        "additionalFields": {
-          "description": "=## 任務說明\n{{ $json.title }}\n\n## TDD 完成定義 (DoD)\n- [ ] 測試命名：`{{ $json.tdd }}`\n- [ ] 🔴 紅燈：測試必須先 Fail\n- [ ] 🟢 綠燈：實作後測試 Pass，覆蓋率 100%\n- [ ] 🔵 藍燈：重構完成，git commit 已執行\n\n## 規格來源\n- Notion：{{ $json.notionPageUrl }}\n- Slug：{{ $json.slug }}"
-        }
-      },
-      "type": "n8n-nodes-base.jira",
-      "typeVersion": 1,
-      "position": [
-        1280,
-        -320
-      ],
-      "id": "720cbad5-baea-45e9-8a49-46300735ecd0",
-      "name": "T09 Jira Create Issue",
-      "credentials": {
-        "jiraSoftwareCloudApi": {
-          "id": "uPfqJ1jXZhdrMiJz",
-          "name": "Jira SW Cloud account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "databasePage",
-        "operation": "update",
-        "pageId": {
-          "__rl": true,
-          "value": "={{ $json.notionPageId }}",
-          "mode": "id"
-        },
-        "propertiesUi": {
-          "propertyValues": [
-            {
-              "key": "Jira_Epic_Key|rich_text",
-              "richText": true,
-              "text": {
-                "text": [
-                  {
-                    "text": "={{ $json.allKeys }}",
-                    "annotationUi": {}
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.notion",
-      "typeVersion": 2.2,
-      "position": [
-        1680,
-        -320
-      ],
-      "id": "bc9168f1-ac38-459a-bdcd-0f8e5129c15e",
-      "name": "T11 Update Notion Jira Key",
-      "credentials": {
-        "notionApi": {
-          "id": "yqbs6rdfnHAnUZoM",
-          "name": "Notion account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst title = item.Name ?? '';\nconst slug = item.Slug ?? '';\nconst weight = item.Weight ?? 99;\nconst body = item.Tasks_To_Open ?? '';\n\nconst content = `---\ntitle: \"${title}\"\nweight: ${weight}\n---\n\n${body}\n`;\n\nreturn [{ json: { slug, content } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1056,
-        -512
-      ],
-      "id": "c391c1c9-79bb-4f3e-b945-6d87bcb7bb7d",
-      "name": "T07 Build Hugo Front Matter"
-    },
-    {
-      "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst raw = item.Tasks_To_Open ?? '';\nconst lines = raw.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\n\nreturn lines.map(line => {\n  const [left, right] = line.split('｜TDD:');\n  const roleMatch = left ? left.match(/^\\[(.+?)\\]/) : null;\n  return {\n    json: {\n      role: roleMatch ? roleMatch[1] : 'Backend',\n      title: left ? left.replace(/^\\[.+?\\]\\s*/, '').trim() : '',\n      tdd: right ? right.trim() : '',\n      notionPageId: item.id ?? '',\n      notionPageUrl: '',\n      slug: item.Slug ?? '',\n    }\n  };\n});"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1056,
-        -320
-      ],
-      "id": "cc59862d-121f-472e-ae76-52bdacc0db9c",
-      "name": "T06 Cut Task Lines"
-    },
-    {
-      "parameters": {
-        "jsCode": "const items = $input.all();\nconst allKeys = items.map(item => item.json.key).join(', ');\nconst notionPageId = $('T06 Cut Task Lines').first().json.notionPageId;\n\nreturn [{ json: { allKeys, notionPageId } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1488,
-        -320
-      ],
-      "id": "952e1560-c21c-447b-b37c-23773dfe6609",
-      "name": "T10 Combine Jira Keys"
-    },
-    {
-      "parameters": {
-        "jsCode": "const fs = require('fs');\nconst item = $input.first().json;\n\nconst filePath = `/data/projects/alag-addyosmani-demos/awtw-short-url-service/hugo-docs/content/docs/${item.slug}.md`;\n\nfs.writeFileSync(filePath, item.content, 'utf8');\n\nreturn [{ json: { success: true, filePath } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1264,
-        -512
-      ],
-      "id": "80b44b26-181c-4a2d-a1b0-050e308799fc",
-      "name": "T08 Write Hugo Docs File"
-    },
-    {
       "parameters": {
         "rule": {
           "interval": [
-            {
-              "field": "minutes",
-              "minutesInterval": 1
-            }
+            { "field": "minutes", "minutesInterval": 1 }
           ]
         }
       },
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
-      "position": [
-        48,
-        16
-      ],
+      "position": [48, 16],
       "id": "bd189c58-187e-49fe-85e4-67b6ced34fc8",
       "name": "T00 Schedule Trigger"
     },
@@ -255,75 +31,35 @@
         "matchType": "allFilters",
         "filters": {
           "conditions": [
-            {
-              "key": "Status|status",
-              "condition": "equals",
-              "statusValue": "Ready to Plan"
-            },
-            {
-              "key": "Jira_Epic_Key|rich_text",
-              "condition": "is_empty"
-            }
+            { "key": "Status|status", "condition": "equals", "statusValue": "Ready to Plan" }
           ]
         },
         "options": {}
       },
       "type": "n8n-nodes-base.notion",
       "typeVersion": 2.2,
-      "position": [
-        256,
-        16
-      ],
+      "position": [224, 16],
       "id": "bb9f479b-e433-4d5e-bf1d-20b15e0aa5c0",
       "name": "T01 Notion Query Ready Phases",
-      "credentials": {
-        "notionApi": {
-          "id": "yqbs6rdfnHAnUZoM",
-          "name": "Notion account"
-        }
-      }
+      "credentials": { "notionApi": { "id": "yqbs6rdfnHAnUZoM", "name": "Notion account" } }
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nreturn items.map(item => ({\n  json: {\n    id: item.json.id,\n    Name: item.json.name,\n    Slug: item.json.property_slug,\n    Weight: item.json.property_weight,\n    Tasks_To_Open: item.json.property_tasks_to_open,\n    Jira_Epic_Key: item.json.property_jira_epic_key,\n    Spec_URL: item.json.property_spec_url,\n    // 前置 phase 依賴檢查用欄位｜實際輸出鍵名須在 n8n 執行一次後於 T01 Notion Query Ready Phases 節點輸出確認，中文屬性名稱經 n8n 轉換的鍵名不保證與英文屬性一致\n    HasPrevPhase: Array.isArray(item.json['property_前置phase']) && item.json['property_前置phase'].length > 0,\n    PrevJiraEpicKey: item.json['property_前置jira_epic_key'],\n    url: item.json.url,\n  }\n}));"
+        "jsCode": "const items = $input.all();\nreturn items.map(item => ({\n  json: {\n    id: item.json.id,\n    url: item.json.url,\n    Name: item.json.name,\n    Slug: item.json.property_slug,\n    Weight: item.json.property_weight,\n    Tasks_To_Open: item.json.property_tasks_to_open,\n    Jira_Epic_Key: item.json.property_jira_epic_key,\n    // 前置 phase 依賴檢查用欄位｜實際輸出鍵名須在 n8n 執行一次後於本節點輸出確認\n    HasPrevPhase: Array.isArray(item.json['property_前置phase']) && item.json['property_前置phase'].length > 0,\n    PrevJiraEpicKey: item.json['property_前置jira_epic_key'],\n  }\n}));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        464,
-        16
-      ],
+      "position": [400, 16],
       "id": "11f63ec6-dc93-463a-b70c-42a51413374b",
       "name": "T02 Parse Notion Fields"
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 3
-          },
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
           "conditions": [
-            {
-              "id": "no-prev-phase",
-              "leftValue": "={{ $json.HasPrevPhase }}",
-              "rightValue": false,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            },
-            {
-              "id": "prev-jira-key-filled",
-              "leftValue": "={{ $json.PrevJiraEpicKey ? $json.PrevJiraEpicKey.length : 0 }}",
-              "rightValue": 0,
-              "operator": {
-                "type": "number",
-                "operation": "gt"
-              }
-            }
+            { "id": "no-prev-phase", "leftValue": "={{ $json.HasPrevPhase }}", "rightValue": false, "operator": { "type": "boolean", "operation": "equals" } },
+            { "id": "prev-jira-key-filled", "leftValue": "={{ $json.PrevJiraEpicKey ? $json.PrevJiraEpicKey.length : 0 }}", "rightValue": 0, "operator": { "type": "number", "operation": "gt" } }
           ],
           "combinator": "or"
         },
@@ -332,10 +68,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        560,
-        16
-      ],
+      "position": [576, 16],
       "id": "b7f6e2b1-3a4c-4d5e-9f6a-1a2b3c4d5e6f",
       "name": "T03 Guard IF - Prev Phase Done"
     },
@@ -343,152 +76,578 @@
       "parameters": {},
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [
-        656,
-        160
-      ],
+      "position": [672, 200],
       "id": "d4e5f6a7-8b9c-4d0e-1f2a-3b4c5d6e7f8a",
       "name": "T03a Skip - Prev Phase Not Ready"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "conditions": [
+            { "id": "has-inbox", "leftValue": "={{ $json.Tasks_To_Open ? $json.Tasks_To_Open.length : 0 }}", "rightValue": 0, "operator": { "type": "number", "operation": "gt" } }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [752, -240],
+      "id": "b0000001-1111-4aaa-8001-000000000001",
+      "name": "T04 Guard IF - Has Notion Inbox"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $('T02 Parse Notion Fields').first().json;\nconst raw = item.Tasks_To_Open ?? '';\nconst lines = raw.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\n\nconst roleToFile = { Backend: 'tasks-backend.md', DevOps: 'tasks-devops.md', QA: 'tasks-qa.md', Frontend: 'tasks-frontend.md' };\n\nconst valid = [];\nconst invalid = [];\n\nfor (const line of lines) {\n  const m = line.match(/^\\[(Backend|DevOps|QA|Frontend)\\]\\[(AI|手動)\\]\\s*(.+?)｜TDD:\\s*(.+?)(?:｜依賴:\\s*(.+))?$/);\n  if (!m) {\n    invalid.push({ line, reason: '格式不符，需為 [角色][AI/手動] 標題｜TDD: 命名（可選｜依賴: T0X）' });\n    continue;\n  }\n  const [, role, execMode, title, tdd, deps] = m;\n  valid.push({\n    line,\n    role,\n    execMode,\n    title: title.trim(),\n    tdd: tdd.trim(),\n    dependsOn: deps ? deps.trim() : '',\n    targetFile: roleToFile[role],\n  });\n}\n\nreturn [{ json: { slug: item.Slug, notionPageId: item.id, notionPageUrl: item.url, valid, invalid } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [928, -400],
+      "id": "b0000002-1111-4aaa-8002-000000000002",
+      "name": "T04a Parse And Validate Inbox Lines"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $json.slug + '\\\\tasks-backend.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [1104, -400],
+      "id": "b0000003-1111-4aaa-8003-000000000003",
+      "name": "T04b1 Read tasks-backend.md (inbox)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T04a Parse And Validate Inbox Lines').first().json.slug + '\\\\tasks-devops.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [1280, -400],
+      "id": "b0000004-1111-4aaa-8004-000000000004",
+      "name": "T04b2 Read tasks-devops.md (inbox)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T04a Parse And Validate Inbox Lines').first().json.slug + '\\\\tasks-qa.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [1456, -400],
+      "id": "b0000005-1111-4aaa-8005-000000000005",
+      "name": "T04b3 Read tasks-qa.md (inbox)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = $('T04a Parse And Validate Inbox Lines').first().json;\nconst fileContents = {\n  'tasks-backend.md': $('T04b1 Read tasks-backend.md (inbox)').first().json.content ?? '',\n  'tasks-devops.md': $('T04b2 Read tasks-devops.md (inbox)').first().json.content ?? '',\n  'tasks-qa.md': $('T04b3 Read tasks-qa.md (inbox)').first().json.content ?? '',\n};\n\nfunction maxTaskId(content) {\n  const matches = [...content.matchAll(/### T(\\d+) —/g)];\n  if (matches.length === 0) return 0;\n  return Math.max(...matches.map(m => parseInt(m[1], 10)));\n}\n\nconst nextNum = {};\nfor (const f of Object.keys(fileContents)) nextNum[f] = maxTaskId(fileContents[f]) + 1;\n\nconst appended = {};\nconst results = [];\n\nfor (const task of parsed.valid) {\n  const file = task.targetFile;\n  const num = nextNum[file]++;\n  const taskId = 'T' + String(num).padStart(2, '0');\n  const depBlock = task.dependsOn ? `\\n\\n**依賴**：${task.dependsOn}` : '';\n  const execLabel = task.execMode === 'AI' ? '🤖 AI 執行' : '👤 手動執行';\n  const block = `\\n\\n### ${taskId} — ${task.title} ⬜　${execLabel}${depBlock}\\n\\n> 由 Notion 新增，詳細任務描述待補充\\n\\n**完成定義**：\\n- 測試命名：\\`${task.tdd}\\`\\n`;\n  appended[file] = (appended[file] ?? '') + block;\n  results.push({ file, taskId, title: task.title });\n}\n\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service/_spec/' + parsed.slug + '/';\nconst fileUpdates = Object.keys(appended).map(file => ({\n  json: {\n    file,\n    filePath: basePath + file,\n    newContent: (fileContents[file] ?? '').replace(/\\s*$/, '') + appended[file] + '\\n',\n  }\n}));\n\nreturn fileUpdates;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1632, -400],
+      "id": "b0000006-1111-4aaa-8006-000000000006",
+      "name": "T04c Expand And Compute Writes"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/write-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: $json.filePath, content: $json.newContent }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1808, -400],
+      "id": "b0000007-1111-4aaa-8007-000000000007",
+      "name": "T04d Write Task File (inbox)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst files = items.map(i => i.json.filePath).filter(Boolean);\nreturn [{ json: { files, hasFiles: files.length > 0 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1984, -400],
+      "id": "b0000008-1111-4aaa-8008-000000000008",
+      "name": "T04e Aggregate Written Files (inbox)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "conditions": [
+            { "id": "has-files", "leftValue": "={{ $json.hasFiles }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2160, -400],
+      "id": "b0000009-1111-4aaa-8009-000000000009",
+      "name": "T04f Guard IF - Has Files To Commit"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ command: 'git add ' + $json.files.join(' ') + ' && git commit -m ' + JSON.stringify('docs(tasks): Notion 新增 ' + $('T04a Parse And Validate Inbox Lines').first().json.slug + ' 任務'), cwd: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2336, -480],
+      "id": "b000000a-1111-4aaa-800a-00000000000a",
+      "name": "T04g Git Commit (Inbox Append)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2336, -320],
+      "id": "b000000b-1111-4aaa-800b-00000000000b",
+      "name": "T04g-skip No Files To Commit"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "conditions": [
+            { "id": "has-invalid", "leftValue": "={{ $('T04a Parse And Validate Inbox Lines').first().json.invalid.length }}", "rightValue": 0, "operator": { "type": "number", "operation": "gt" } }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2512, -400],
+      "id": "b000000c-1111-4aaa-800c-00000000000c",
+      "name": "T04h Guard IF - Has Invalid Lines"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = $('T04a Parse And Validate Inbox Lines').first().json;\nconst lines = parsed.invalid.map(x => `- ${x.line}\\n  原因：${x.reason}`).join('\\n');\nconst content = `⚠️ Tasks_To_Open 有 ${parsed.invalid.length} 行格式錯誤，請修正後重新填入：\\n${lines}`;\nreturn [{ json: { notionPageId: parsed.notionPageId, commentContent: content } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2688, -480],
+      "id": "b000000d-1111-4aaa-800d-00000000000d",
+      "name": "T04i-build 組合留言內容"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/comments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ parent: { page_id: $json.notionPageId }, rich_text: [{ text: { content: $json.commentContent } }] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2864, -480],
+      "id": "b000000e-1111-4aaa-800e-00000000000e",
+      "name": "T04i 留言通知格式錯誤",
+      "credentials": { "notionApi": { "id": "yqbs6rdfnHAnUZoM", "name": "Notion account" } }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2688, -320],
+      "id": "b000000f-1111-4aaa-800f-00000000000f",
+      "name": "T04i-skip No Invalid Lines"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = $('T04a Parse And Validate Inbox Lines').first().json;\nconst newValue = parsed.invalid.map(x => x.line).join('\\n');\nreturn [{ json: { notionPageId: parsed.notionPageId, newTasksToOpen: newValue } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3040, -400],
+      "id": "b0000010-1111-4aaa-8010-000000000010",
+      "name": "T04j 準備更新 Tasks_To_Open"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": { "__rl": true, "value": "={{ $json.notionPageId }}", "mode": "id" },
+        "propertiesUi": {
+          "propertyValues": [
+            { "key": "Tasks_To_Open|rich_text", "richText": true, "text": { "text": [ { "text": "={{ $json.newTasksToOpen }}", "annotationUi": {} } ] } }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [3216, -400],
+      "id": "b0000011-1111-4aaa-8011-000000000011",
+      "name": "T04k Update Notion Tasks_To_Open",
+      "credentials": { "notionApi": { "id": "yqbs6rdfnHAnUZoM", "name": "Notion account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $json.Slug + '\\\\tasks-backend.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [928, 16],
+      "id": "b0000012-1111-4aaa-8012-000000000012",
+      "name": "T06 Read Tasks Backend"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\tasks-devops.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [1104, 16],
+      "id": "b0000013-1111-4aaa-8013-000000000013",
+      "name": "T06b Read Tasks DevOps"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\tasks-qa.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [1280, 16],
+      "id": "b0000014-1111-4aaa-8014-000000000014",
+      "name": "T06c Read Tasks QA"
+    },
+    {
+      "parameters": {
+        "jsCode": "const files = {\n  'tasks-backend.md': { content: $('T06 Read Tasks Backend').first().json.content ?? '', role: 'Backend' },\n  'tasks-devops.md': { content: $('T06b Read Tasks DevOps').first().json.content ?? '', role: 'DevOps' },\n  'tasks-qa.md': { content: $('T06c Read Tasks QA').first().json.content ?? '', role: 'QA' },\n};\n\nconst phase = $('T02 Parse Notion Fields').first().json;\n\nfunction splitBlocks(content) {\n  if (!content) return [];\n  const blocks = content.split(/(?=^### T\\d+ )/m).filter(b => b.trim().startsWith('### T'));\n  return blocks.map(block => {\n    const headerMatch = block.match(/^### (T\\d+) — (.+?) ([⬜✅])\\s*(?:　(.+?))?\\s*(?:\\((ASUS-\\d+(?:,\\s*ASUS-\\d+)*)\\))?\\s*$/m);\n    if (!headerMatch) return null;\n    const [, taskId, title, statusIcon, execMode, existingJiraKeys] = headerMatch;\n    const depMatch = block.match(/\\*\\*依賴\\*\\*[：:]\\s*(T\\d+(?:[,、]\\s*T\\d+)*)/);\n    const tddMatch = block.match(/測試命名[：:]\\s*`([^`]+)`/);\n    return {\n      taskId,\n      title: title.trim(),\n      status: statusIcon === '✅' ? 'done' : 'todo',\n      alreadyTicketed: Boolean(existingJiraKeys),\n      execMode: execMode ? execMode.trim() : '',\n      dependsOn: depMatch ? depMatch[1].split(/[,、]\\s*/) : [],\n      tdd: tddMatch ? tddMatch[1].trim() : '',\n      body: block.trim(),\n    };\n  }).filter(Boolean);\n}\n\nconst statusMap = {};\nconst allBlocksByFile = {};\nfor (const [file, info] of Object.entries(files)) {\n  const blocks = splitBlocks(info.content);\n  allBlocksByFile[file] = blocks;\n  for (const b of blocks) {\n    statusMap[b.taskId] = b.status === 'done' ? 'done' : (b.alreadyTicketed ? 'ticketed' : 'todo');\n  }\n}\n\nconst eligible = [];\nfor (const [file, info] of Object.entries(files)) {\n  for (const b of allBlocksByFile[file]) {\n    if (b.status !== 'todo' || b.alreadyTicketed) continue;\n    const blocked = b.dependsOn.some(dep => statusMap[dep] !== 'done');\n    if (blocked) continue;\n    eligible.push({\n      json: {\n        slug: phase.Slug,\n        notionPageId: phase.id,\n        notionPageUrl: phase.url,\ntaskId: b.taskId,\n        title: b.title,\n        tdd: b.tdd,\n        body: b.body,\n        execMode: b.execMode.includes('手動') ? '手動' : 'AI',\n        role: info.role,\n        sourceFile: file,\n      }\n    });\n  }\n}\n\nreturn eligible;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1456, 16],
+      "id": "b0000015-1111-4aaa-8015-000000000015",
+      "name": "T07 Split Tasks And Dependency Guard"
+    },
+    {
+      "parameters": {
+        "project": { "__rl": true, "value": "10000", "mode": "list", "cachedResultName": "awtw-short-url-service" },
+        "issueType": { "__rl": true, "value": "10003", "mode": "list", "cachedResultName": "任務" },
+        "summary": "={{ $json.title }}",
+        "additionalFields": {
+          "description": "=## 任務說明\n{{ $json.title }}\n\n## 完整任務內容\n{{ $json.body }}\n\n## 規格來源\n- Notion：{{ $json.notionPageUrl }}\n- Slug：{{ $json.slug }}\n- TaskId：{{ $json.slug }}#{{ $json.taskId }}\n- ExecMode：{{ $json.execMode }}"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [1632, 16],
+      "id": "720cbad5-baea-45e9-8a49-46300735ecd0",
+      "name": "T13 Jira Create Issue",
+      "credentials": { "jiraSoftwareCloudApi": { "id": "uPfqJ1jXZhdrMiJz", "name": "Jira SW Cloud account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const jiraResults = $input.all();\nconst originals = $('T07 Split Tasks And Dependency Guard').all();\n\nconst perTask = jiraResults.map((r, idx) => ({\n  jiraKey: r.json.key,\n  taskId: originals[idx] ? originals[idx].json.taskId : undefined,\n  sourceFile: originals[idx] ? originals[idx].json.sourceFile : undefined,\n  slug: originals[idx] ? originals[idx].json.slug : undefined,\n}));\n\nconst allKeys = perTask.map(p => p.jiraKey).filter(Boolean);\n\nreturn [{ json: { perTask, allKeys, slug: originals[0] ? originals[0].json.slug : '', notionPageId: originals[0] ? originals[0].json.notionPageId : '' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1808, 16],
+      "id": "952e1560-c21c-407e-8de9-c8032f85a2901",
+      "name": "T14 Pair Jira Keys With Tasks"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst perTask = data.perTask;\n\nconst byFile = {};\nfor (const t of perTask) {\n  if (!t.sourceFile) continue;\n  byFile[t.sourceFile] = byFile[t.sourceFile] || [];\n  byFile[t.sourceFile].push(t);\n}\n\nconst fileContents = {\n  'tasks-backend.md': $('T06 Read Tasks Backend').first().json.content ?? '',\n  'tasks-devops.md': $('T06b Read Tasks DevOps').first().json.content ?? '',\n  'tasks-qa.md': $('T06c Read Tasks QA').first().json.content ?? '',\n};\n\nconst updates = [];\nfor (const [file, tasks] of Object.entries(byFile)) {\n  let content = fileContents[file] ?? '';\n  for (const t of tasks) {\n    const re = new RegExp('(### ' + t.taskId + ' — .+?)⬜(.*)$', 'm');\n    if (!re.test(content)) continue;\n    content = content.replace(re, (m, before, after) => before + '⬜' + after + `　(${t.jiraKey})`);\n  }\n  updates.push({\n    file,\n    filePath: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service/_spec/' + data.slug + '/' + file,\n    content,\n  });\n}\n\nreturn updates.map(u => ({ json: u }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1984, 16],
+      "id": "b0000016-1111-4aaa-8016-000000000016",
+      "name": "T15 回填任務票號到 tasks-*.md"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/write-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: $json.filePath, content: $json.content }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2160, 16],
+      "id": "b0000017-1111-4aaa-8017-000000000017",
+      "name": "T16 寫入回填後的任務檔"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst files = items.map(i => i.json.filePath).filter(Boolean);\nreturn [{ json: { files, hasFiles: files.length > 0 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2336, 16],
+      "id": "b0000018-1111-4aaa-8018-000000000018",
+      "name": "T17a Aggregate Written Files (ticket)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "conditions": [
+            { "id": "has-files", "leftValue": "={{ $json.hasFiles }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2512, 16],
+      "id": "b0000019-1111-4aaa-8019-000000000019",
+      "name": "T17b Guard IF - Has Files To Commit"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ command: 'git add ' + $json.files.join(' ') + ' && git commit -m ' + JSON.stringify('docs(tasks): 回填 ' + $('T14 Pair Jira Keys With Tasks').first().json.slug + ' 票號 (' + $('T14 Pair Jira Keys With Tasks').first().json.perTask.map(t => t.taskId + ':' + t.jiraKey).join(', ') + ')'), cwd: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2688, -64],
+      "id": "b000001a-1111-4aaa-801a-00000000001a",
+      "name": "T17c Git Commit (回填票號)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2688, 96],
+      "id": "b000001b-1111-4aaa-801b-00000000001b",
+      "name": "T17c-skip No Files To Commit"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "get",
+        "pageId": { "__rl": true, "value": "={{ $('T14 Pair Jira Keys With Tasks').first().json.notionPageId }}", "mode": "id" },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [2864, 16],
+      "id": "b000001c-1111-4aaa-801c-00000000001c",
+      "name": "T18 讀取現有 Jira_Epic_Key",
+      "credentials": { "notionApi": { "id": "yqbs6rdfnHAnUZoM", "name": "Notion account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const page = $json;\n// Notion 單頁 get 操作的簡化輸出格式跟批次 getAll 不一定一致，防禦性嘗試多種可能欄位路徑\nfunction extractExistingJiraKey(p) {\n  if (typeof p.property_jira_epic_key === 'string' && p.property_jira_epic_key) return p.property_jira_epic_key;\n  if (typeof p.Jira_Epic_Key === 'string' && p.Jira_Epic_Key) return p.Jira_Epic_Key;\n  const rt = p.properties?.Jira_Epic_Key?.rich_text;\n  if (Array.isArray(rt)) return rt.map(t => t.plain_text).join('');\n  return '';\n}\n\nconst existingRaw = extractExistingJiraKey(page);\nconst pairData = $('T14 Pair Jira Keys With Tasks').first().json;\nconst newKeys = pairData.allKeys ?? [];\n\nconst merged = [existingRaw, ...newKeys]\n  .filter(Boolean)\n  .flatMap(s => String(s).split(',').map(k => k.trim()))\n  .filter(Boolean)\n  .filter((k, i, arr) => arr.indexOf(k) === i)\n  .join(', ');\n\nreturn [{ json: { notionPageId: pairData.notionPageId, allKeys: merged, _debug_existingRaw: existingRaw } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3040, 16],
+      "id": "b000001d-1111-4aaa-801d-00000000001d",
+      "name": "T19 合併並回填 Jira_Epic_Key"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": { "__rl": true, "value": "={{ $json.notionPageId }}", "mode": "id" },
+        "propertiesUi": {
+          "propertyValues": [
+            { "key": "Jira_Epic_Key|rich_text", "richText": true, "text": { "text": [ { "text": "={{ $json.allKeys }}", "annotationUi": {} } ] } }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [3216, 16],
+      "id": "bc9168f1-ac38-459a-bdcd-0f8e5129c15e",
+      "name": "T20 Update Notion Jira Key",
+      "credentials": { "notionApi": { "id": "yqbs6rdfnHAnUZoM", "name": "Notion account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\spec.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [1456, 320],
+      "id": "b000001e-1111-4aaa-801e-00000000001e",
+      "name": "T09 Read Spec.md"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('T02 Parse Notion Fields').first().json.Slug + '\\\\design.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [1632, 320],
+      "id": "b000001f-1111-4aaa-801f-00000000001f",
+      "name": "T10 Read Design.md"
+    },
+    {
+      "parameters": {
+        "jsCode": "const phase = $('T02 Parse Notion Fields').first().json;\nconst specContent = $('T09 Read Spec.md').first().json.content ?? '（尚無 spec.md）';\nconst designContent = $('T10 Read Design.md').first().json.content ?? '（尚無 design.md）';\nconst backendTasks = $('T06 Read Tasks Backend').first().json.content ?? '';\nconst devopsTasks = $('T06b Read Tasks DevOps').first().json.content ?? '';\nconst qaTasks = $('T06c Read Tasks QA').first().json.content ?? '';\n\nconst title = phase.Name ?? phase.Slug;\nconst weight = phase.Weight ?? 99;\n\nconst frontMatter = (docTitle) => `---\ntitle: \"${docTitle}\"\nweight: ${weight}\n---\n\n`;\n\nconst indexContent = frontMatter(title) +\n  `## ${title}\\n\\n` +\n  `- [規格文件](spec.md)\\n` +\n  `- [設計文件](design.md)\\n` +\n  `- [任務清單](tasks.md)\\n`;\n\nconst specDoc = frontMatter(title + ' — 規格文件') + specContent;\nconst designDoc = frontMatter(title + ' — 設計文件') + designContent;\nconst tasksDoc = frontMatter(title + ' — 任務清單') +\n  `## Backend\\n\\n${backendTasks}\\n\\n## DevOps\\n\\n${devopsTasks}\\n\\n## QA\\n\\n${qaTasks}\\n`;\n\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service/hugo-docs/content/docs/' + phase.Slug + '/';\n\nreturn [\n  { json: { filePath: basePath + '_index.md', content: indexContent } },\n  { json: { filePath: basePath + 'spec.md', content: specDoc } },\n  { json: { filePath: basePath + 'design.md', content: designDoc } },\n  { json: { filePath: basePath + 'tasks.md', content: tasksDoc } },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1808, 320],
+      "id": "b0000020-1111-4aaa-8020-000000000020",
+      "name": "T11 Build Hugo Four Docs"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/write-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: $json.filePath, content: $json.content }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1984, 320],
+      "id": "b0000021-1111-4aaa-8021-000000000021",
+      "name": "T12 Write Hugo Doc File"
     }
   ],
   "pinData": {},
   "connections": {
-    "T04 Guard IF - Jira Key Empty": {
-      "main": [
-        [
-          {
-            "node": "T05 Guard IF - Has Tasks To Open",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "T04a Skip - Jira Key Already Set",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "T05 Guard IF - Has Tasks To Open": {
-      "main": [
-        [
-          {
-            "node": "T06 Cut Task Lines",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "T07 Build Hugo Front Matter",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "T05a Skip - No Tasks To Open",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "T09 Jira Create Issue": {
-      "main": [
-        [
-          {
-            "node": "T10 Combine Jira Keys",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "T07 Build Hugo Front Matter": {
-      "main": [
-        [
-          {
-            "node": "T08 Write Hugo Docs File",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "T06 Cut Task Lines": {
-      "main": [
-        [
-          {
-            "node": "T09 Jira Create Issue",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "T10 Combine Jira Keys": {
-      "main": [
-        [
-          {
-            "node": "T11 Update Notion Jira Key",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "T00 Schedule Trigger": {
-      "main": [
-        [
-          {
-            "node": "T01 Notion Query Ready Phases",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "T01 Notion Query Ready Phases": {
-      "main": [
-        [
-          {
-            "node": "T02 Parse Notion Fields",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "T02 Parse Notion Fields": {
-      "main": [
-        [
-          {
-            "node": "T03 Guard IF - Prev Phase Done",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
+    "T00 Schedule Trigger": { "main": [[ { "node": "T01 Notion Query Ready Phases", "type": "main", "index": 0 } ]] },
+    "T01 Notion Query Ready Phases": { "main": [[ { "node": "T02 Parse Notion Fields", "type": "main", "index": 0 } ]] },
+    "T02 Parse Notion Fields": { "main": [[ { "node": "T03 Guard IF - Prev Phase Done", "type": "main", "index": 0 } ]] },
     "T03 Guard IF - Prev Phase Done": {
       "main": [
+        [ { "node": "T04 Guard IF - Has Notion Inbox", "type": "main", "index": 0 } ],
+        [ { "node": "T03a Skip - Prev Phase Not Ready", "type": "main", "index": 0 } ]
+      ]
+    },
+    "T04 Guard IF - Has Notion Inbox": {
+      "main": [
+        [ { "node": "T04a Parse And Validate Inbox Lines", "type": "main", "index": 0 } ],
+        [ { "node": "T06 Read Tasks Backend", "type": "main", "index": 0 } ]
+      ]
+    },
+    "T04a Parse And Validate Inbox Lines": { "main": [[ { "node": "T04b1 Read tasks-backend.md (inbox)", "type": "main", "index": 0 } ]] },
+    "T04b1 Read tasks-backend.md (inbox)": { "main": [[ { "node": "T04b2 Read tasks-devops.md (inbox)", "type": "main", "index": 0 } ]] },
+    "T04b2 Read tasks-devops.md (inbox)": { "main": [[ { "node": "T04b3 Read tasks-qa.md (inbox)", "type": "main", "index": 0 } ]] },
+    "T04b3 Read tasks-qa.md (inbox)": { "main": [[ { "node": "T04c Expand And Compute Writes", "type": "main", "index": 0 } ]] },
+    "T04c Expand And Compute Writes": { "main": [[ { "node": "T04d Write Task File (inbox)", "type": "main", "index": 0 } ]] },
+    "T04d Write Task File (inbox)": { "main": [[ { "node": "T04e Aggregate Written Files (inbox)", "type": "main", "index": 0 } ]] },
+    "T04e Aggregate Written Files (inbox)": { "main": [[ { "node": "T04f Guard IF - Has Files To Commit", "type": "main", "index": 0 } ]] },
+    "T04f Guard IF - Has Files To Commit": {
+      "main": [
+        [ { "node": "T04g Git Commit (Inbox Append)", "type": "main", "index": 0 } ],
+        [ { "node": "T04g-skip No Files To Commit", "type": "main", "index": 0 } ]
+      ]
+    },
+    "T04g Git Commit (Inbox Append)": { "main": [[ { "node": "T04h Guard IF - Has Invalid Lines", "type": "main", "index": 0 } ]] },
+    "T04g-skip No Files To Commit": { "main": [[ { "node": "T04h Guard IF - Has Invalid Lines", "type": "main", "index": 0 } ]] },
+    "T04h Guard IF - Has Invalid Lines": {
+      "main": [
+        [ { "node": "T04i-build 組合留言內容", "type": "main", "index": 0 } ],
+        [ { "node": "T04i-skip No Invalid Lines", "type": "main", "index": 0 } ]
+      ]
+    },
+    "T04i-build 組合留言內容": { "main": [[ { "node": "T04i 留言通知格式錯誤", "type": "main", "index": 0 } ]] },
+    "T04i 留言通知格式錯誤": { "main": [[ { "node": "T04j 準備更新 Tasks_To_Open", "type": "main", "index": 0 } ]] },
+    "T04i-skip No Invalid Lines": { "main": [[ { "node": "T04j 準備更新 Tasks_To_Open", "type": "main", "index": 0 } ]] },
+    "T04j 準備更新 Tasks_To_Open": { "main": [[ { "node": "T04k Update Notion Tasks_To_Open", "type": "main", "index": 0 } ]] },
+    "T04k Update Notion Tasks_To_Open": { "main": [[ { "node": "T06 Read Tasks Backend", "type": "main", "index": 0 } ]] },
+    "T06 Read Tasks Backend": { "main": [[ { "node": "T06b Read Tasks DevOps", "type": "main", "index": 0 } ]] },
+    "T06b Read Tasks DevOps": { "main": [[ { "node": "T06c Read Tasks QA", "type": "main", "index": 0 } ]] },
+    "T06c Read Tasks QA": {
+      "main": [
         [
-          {
-            "node": "T04 Guard IF - Jira Key Empty",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "T03a Skip - Prev Phase Not Ready",
-            "type": "main",
-            "index": 0
-          }
+          { "node": "T07 Split Tasks And Dependency Guard", "type": "main", "index": 0 },
+          { "node": "T09 Read Spec.md", "type": "main", "index": 0 }
         ]
       ]
-    }
+    },
+    "T07 Split Tasks And Dependency Guard": { "main": [[ { "node": "T13 Jira Create Issue", "type": "main", "index": 0 } ]] },
+    "T13 Jira Create Issue": { "main": [[ { "node": "T14 Pair Jira Keys With Tasks", "type": "main", "index": 0 } ]] },
+    "T14 Pair Jira Keys With Tasks": { "main": [[ { "node": "T15 回填任務票號到 tasks-*.md", "type": "main", "index": 0 } ]] },
+    "T15 回填任務票號到 tasks-*.md": { "main": [[ { "node": "T16 寫入回填後的任務檔", "type": "main", "index": 0 } ]] },
+    "T16 寫入回填後的任務檔": { "main": [[ { "node": "T17a Aggregate Written Files (ticket)", "type": "main", "index": 0 } ]] },
+    "T17a Aggregate Written Files (ticket)": { "main": [[ { "node": "T17b Guard IF - Has Files To Commit", "type": "main", "index": 0 } ]] },
+    "T17b Guard IF - Has Files To Commit": {
+      "main": [
+        [ { "node": "T17c Git Commit (回填票號)", "type": "main", "index": 0 } ],
+        [ { "node": "T17c-skip No Files To Commit", "type": "main", "index": 0 } ]
+      ]
+    },
+    "T17c Git Commit (回填票號)": { "main": [[ { "node": "T18 讀取現有 Jira_Epic_Key", "type": "main", "index": 0 } ]] },
+    "T17c-skip No Files To Commit": { "main": [[ { "node": "T18 讀取現有 Jira_Epic_Key", "type": "main", "index": 0 } ]] },
+    "T18 讀取現有 Jira_Epic_Key": { "main": [[ { "node": "T19 合併並回填 Jira_Epic_Key", "type": "main", "index": 0 } ]] },
+    "T19 合併並回填 Jira_Epic_Key": { "main": [[ { "node": "T20 Update Notion Jira Key", "type": "main", "index": 0 } ]] },
+    "T09 Read Spec.md": { "main": [[ { "node": "T10 Read Design.md", "type": "main", "index": 0 } ]] },
+    "T10 Read Design.md": { "main": [[ { "node": "T11 Build Hugo Four Docs", "type": "main", "index": 0 } ]] },
+    "T11 Build Hugo Four Docs": { "main": [[ { "node": "T12 Write Hugo Doc File", "type": "main", "index": 0 } ]] }
   },
   "active": true,
   "settings": {

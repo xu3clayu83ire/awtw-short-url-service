@@ -1,7 +1,7 @@
 # Notion Tasks_To_Open 同步佇列
 
 > `/mcp`（Notion MCP）尚未建立，Tasks_To_Open 內容暫存於此，待 MCP 建立後依序貼入主表「功能規格總表」對應 phase row。
-> 同步規則見 `_rule/adw-conventions.md` →「Tasks_To_Open 產出與同步規則」「跨 Phase 開票順序保護規則」。
+> 同步規則見 `_rule/asus-conventions.md` →「Tasks_To_Open 產出與同步規則」「跨 Phase 開票順序保護規則」。
 >
 > ⚠️ 開票順序保護：本檔案內 phase 依 Weight 由小到大排列。同步／開票時**必須依序處理**，
 > 前一個 phase 的 `Jira_Epic_Key` 未回填前，不得對後一個 phase 開票（避免重演 Phase 5 早於 Phase 4 開票的問題）。
@@ -13,7 +13,7 @@
 **對應 row**：功能規格總表 → Slug = `phase4-cicd-review`
 **開票前置條件**：資料庫中無 Weight < 4 的 row（Phase 1-3 未走 Jira），視同已滿足
 **Spec_URL**：維持空值（用途已改回人看的 Hugo 發布網址，待 Phase 5 文件站部署後才回填，不再用於 workflow 解析 slug）
-**Slug 傳遞方式**：開票時 workflow 直接把 Notion 的 `Slug` 屬性值寫進 Jira 票面 `Slug：<slug>` 這行，`asus-dev-workflow.json` 直接解析這行取值（見 `_rule/adw-conventions.md`）
+**Slug 傳遞方式**：開票時 workflow 直接把 Notion 的 `Slug` 屬性值寫進 Jira 票面 `Slug：<slug>` 這行，`asus-dev-workflow.json` 直接解析這行取值（見 `_rule/asus-conventions.md`）
 **Jira_Epic_Key**：舊票 ASUS-88 ~ ASUS-96 因舊版 workflow 用 `Spec_URL` 路徑正則解析 slug、而 `Spec_URL` 當時為空，Description 缺必要資訊，已規劃刪除重建（見 `_note/decisions.md`），目前 Notion 端已重置為空、Status 改回 Draft，待使用者刪除 Jira 舊票後重新觸發開票
 
 ```

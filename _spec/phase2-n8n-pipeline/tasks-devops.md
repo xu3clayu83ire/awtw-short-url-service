@@ -27,15 +27,15 @@
 1. 左側選單 → Credentials → Add Credential
 2. 搜尋「Notion API」
 3. 填入 Internal Integration Token
-4. 命名為 `Notion - ADW`，儲存並測試連線
+4. 命名為 `Notion - ASUS`，儲存並測試連線
 
 **TDD DoD**
 - 測試命名：`應該_成功連線Notion_當Token正確時`
 - 🔴 紅燈：未設定前，Notion 節點顯示「No credentials」
-- 🟢 綠燈：設定後，n8n Credential 頁面顯示 `Notion - ADW` 連線測試通過
+- 🟢 綠燈：設定後，n8n Credential 頁面顯示 `Notion - ASUS` 連線測試通過
 - 覆蓋率：n8n UI 驗證
 
-**完成定義**：`Notion - ADW` Credential 連線測試顯示綠色勾勾
+**完成定義**：`Notion - ASUS` Credential 連線測試顯示綠色勾勾
 
 ---
 
@@ -67,9 +67,9 @@
 
 **依賴**：T01
 
-在 n8n 新建 Workflow，命名為 `ADW - Notion to Jira & Hugo`：
+在 n8n 新建 Workflow，命名為 `ASUS - Notion to Jira & Hugo`：
 1. 新增 Notion Trigger 節點
-2. Credential 選 `Notion - ADW`
+2. Credential 選 `Notion - ASUS`
 3. Database 選「功能規格總表」
 4. Poll 間隔：1 分鐘
 5. 連線到後續 IF 節點（由 Backend T01 建立）

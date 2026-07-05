@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload = $input.first().json.body ?? $input.first().json;\nconst issue = payload.issue ?? {};\nconst fields = issue.fields ?? {};\n\nconst status = fields.status?.name ?? '';\nif (status !== 'In Progress') {\n  return [];\n}\n\nconst summary = fields.summary ?? '';\n\n// 手動票略過，不觸發 Claude API\nif (summary.includes('[手動]')) {\n  return [];\n}\n\nconst descText = JSON.stringify(fields.description ?? '');\nconst tddMatch = descText.match(/測試命名[：:]\\s*`?([^`\\n\"]+)`?/);\nconst tddDod = tddMatch ? tddMatch[1].trim() : '';\n\nconst slugMatch = descText.match(/Slug[：:]\\s*([^\\s\"\\\\]+)/);\nconst slug = slugMatch ? slugMatch[1] : '';\n\nreturn [{\n  json: {\n    jiraKey: issue.key ?? '',\n    summary,\n    tddDod,\n    slug,\n    jiraUrl: `https://prostyliu.atlassian.net/browse/${issue.key}`,\n    issueId: issue.id ?? '',\n  }\n}];"
+        "jsCode": "const payload = $input.first().json.body ?? $input.first().json;\nconst issue = payload.issue ?? {};\nconst fields = issue.fields ?? {};\n\nconst status = fields.status?.name ?? '';\nif (status !== 'In Progress') {\n  return [];\n}\n\nconst summary = fields.summary ?? '';\nconst descText = JSON.stringify(fields.description ?? '');\n\n// 手動票略過，不觸發 Claude API（2026-07-05 修訂：改讀票面 ExecMode：欄位，不再依賴 summary 裡的 [手動] 字樣，因為新版標題不含執行方式標籤）\nconst execModeMatch = descText.match(/ExecMode[：:]\\s*([^\\s\"\\\\]+)/);\nconst execMode = execModeMatch ? execModeMatch[1] : '';\nif (execMode.includes('手動')) {\n  return [];\n}\n\nconst tddMatch = descText.match(/測試命名[：:]\\s*`?([^`\\n\"]+)`?/);\nconst tddDod = tddMatch ? tddMatch[1].trim() : '';\n\nconst slugMatch = descText.match(/Slug[：:]\\s*([^\\s\"\\\\]+)/);\nconst slug = slugMatch ? slugMatch[1] : '';\n\nconst taskIdMatch = descText.match(/TaskId[：:]\\s*[^\\s#\"\\\\]+#(T\\d+)/);\nconst taskId = taskIdMatch ? taskIdMatch[1] : '';\n\nreturn [{\n  json: {\n    jiraKey: issue.key ?? '',\n    summary,\n    tddDod,\n    slug,\n    taskId,\n    jiraUrl: `https://prostyliu.atlassian.net/browse/${issue.key}`,\n    issueId: issue.id ?? '',\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -36,13 +36,83 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\spec.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\tasks-backend.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [
+        368,
+        0
+      ],
+      "id": "a1b2c3d4-0001-4aaa-9001-000000000001",
+      "name": "讀取 tasks-backend.md"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\tasks-devops.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [
+        544,
+        0
+      ],
+      "id": "a1b2c3d4-0002-4aaa-9002-000000000002",
+      "name": "讀取 tasks-devops.md"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\tasks-qa.md' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "continueOnFail": true,
+      "position": [
+        720,
+        0
+      ],
+      "id": "a1b2c3d4-0003-4aaa-9003-000000000003",
+      "name": "讀取 tasks-qa.md"
+    },
+    {
+      "parameters": {
+        "jsCode": "const taskId = $('解析票面').first().json.taskId;\nconst files = [\n  { name: 'tasks-backend.md', content: $('讀取 tasks-backend.md').first().json.content },\n  { name: 'tasks-devops.md', content: $('讀取 tasks-devops.md').first().json.content },\n  { name: 'tasks-qa.md', content: $('讀取 tasks-qa.md').first().json.content },\n];\n\nfunction extractBlock(content, id) {\n  if (!content) return null;\n  const startRe = new RegExp('^### ' + id + ' — ', 'm');\n  const startMatch = content.match(startRe);\n  if (!startMatch) return null;\n  const startIdx = startMatch.index;\n  const rest = content.slice(startIdx);\n  const firstNewline = rest.indexOf('\\n');\n  const remainder = firstNewline >= 0 ? rest.slice(firstNewline + 1) : '';\n  const nextMatch = remainder.match(/\\n### T\\d+ /);\n  const block = nextMatch ? rest.slice(0, firstNewline + 1 + nextMatch.index) : rest;\n  return block.trim();\n}\n\nif (!taskId) {\n  throw new Error('票面缺少 TaskId，無法定位任務區塊（檢查 Jira Description 是否有 TaskId：<slug>#<taskId> 這行）');\n}\n\nfor (const file of files) {\n  const block = extractBlock(file.content, taskId);\n  if (block) {\n    return [{ json: { taskBody: block, sourceFile: file.name } }];\n  }\n}\n\nthrow new Error(`找不到 TaskId=${taskId} 對應的任務區塊，檢查三份 tasks-*.md 檔案`);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        0
+      ],
+      "id": "a1b2c3d4-0004-4aaa-9004-000000000004",
+      "name": "擷取任務區塊"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\spec.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        368,
+        1072,
         0
       ],
       "id": "3d32ef7e-c5a1-4d7f-bc1e-a072120a5afe",
@@ -54,13 +124,13 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\design.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\design.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        560,
+        1248,
         0
       ],
       "id": "0329529b-b9ca-4148-a8ec-94c05715112d",
@@ -68,12 +138,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const ticket = $('解析票面').first().json;\nconst specContent = $('讀取 spec').first().json.content ?? '';\nconst designContent = $('讀取 design').first().json.content ?? '';\n\nconst systemPrompt = `你是一位嚴格遵循 TDD 紀律的 TypeScript 後端工程師。\n你必須依照以下規範產出程式碼：\n- 函式長度上限 50 行\n- 所有錯誤處理必須有繁體中文上下文，禁止 silent fail\n- 測試命名格式：應該_<預期行為>_當<條件>\n- 禁止直接產出業務邏輯，必須先產出測試檔案\n\n你的輸出必須是嚴格的 JSON 格式：\n{\n  \"test_file_path\": \"test/xxx.test.ts\",\n  \"test_file_content\": \"（完整測試檔案內容）\",\n  \"impl_file_path\": \"src/xxx.ts\",\n  \"impl_file_content\": \"（完整業務邏輯內容）\",\n  \"commit_message\": \"feat(backend): [票號] 實作功能描述\"\n}`;\n\nconst userPrompt = `Jira 票號：${ticket.jiraKey}\n任務標題：${ticket.summary}\nTDD 完成定義：${ticket.tddDod}\n\n規格文件內容：\n${specContent}\n\n設計文件內容：\n${designContent}\n\n請依照上述規格，產出這張票的測試檔案與業務邏輯實作。`;\n\nreturn [{ json: { systemPrompt, userPrompt, jiraKey: ticket.jiraKey, jiraUrl: ticket.jiraUrl, issueId: ticket.issueId } }];"
+        "jsCode": "const ticket = $('解析票面').first().json;\nconst specContent = $('讀取 spec').first().json.content ?? '';\nconst designContent = $('讀取 design').first().json.content ?? '';\nconst taskBody = $('擷取任務區塊').first().json.taskBody ?? '';\nconst sourceFile = $('擷取任務區塊').first().json.sourceFile ?? '';\n\nconst systemPrompt = `你是一位嚴格遵循 TDD 紀律的 TypeScript 後端工程師。\n你必須依照以下規範產出程式碼：\n- 函式長度上限 50 行\n- 所有錯誤處理必須有繁體中文上下文，禁止 silent fail\n- 測試命名格式：應該_<預期行為>_當<條件>\n- 禁止直接產出業務邏輯，必須先產出測試檔案\n\n你的輸出必須是嚴格的 JSON 格式：\n{\n  \"test_file_path\": \"test/xxx.test.ts\",\n  \"test_file_content\": \"（完整測試檔案內容）\",\n  \"impl_file_path\": \"src/xxx.ts\",\n  \"impl_file_content\": \"（完整業務邏輯內容）\",\n  \"commit_message\": \"feat(backend): [票號] 實作功能描述\"\n}`;\n\nconst userPrompt = `Jira 票號：${ticket.jiraKey}\n任務標題：${ticket.summary}\nTDD 完成定義：${ticket.tddDod}\n\n完整任務內容（含依賴與所有驗收條件）：\n${taskBody}\n\n規格文件內容：\n${specContent}\n\n設計文件內容：\n${designContent}\n\n請依照上述規格，產出這張票的測試檔案與業務邏輯實作。`;\n\nreturn [{ json: { systemPrompt, userPrompt, jiraKey: ticket.jiraKey, jiraUrl: ticket.jiraUrl, issueId: ticket.issueId, summary: ticket.summary, slug: ticket.slug, taskId: ticket.taskId, sourceFile } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        736,
+        1424,
         0
       ],
       "id": "d4f1fbe7-bba1-41cb-8698-9e50cf28b543",
@@ -81,12 +151,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nreturn [{\n  json: {\n    ...item,\n    claudeBody: JSON.stringify({\n      model: 'claude-sonnet-4-6',\n      max_tokens: 4096,\n      system: item.systemPrompt,\n      messages: [{ role: 'user', content: item.userPrompt }]\n    })\n  }\n}];"
+        "jsCode": "const item = $input.first().json;\nreturn [{\n  json: {\n    ...item,\n    claudeBody: JSON.stringify({\n      model: 'claude-sonnet-4-6',\n      max_tokens: 8192,\n      system: item.systemPrompt,\n      messages: [{ role: 'user', content: item.userPrompt }]\n    })\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        896,
+        1600,
         0
       ],
       "id": "91f26f2f-d317-4261-be0a-88bd756b4dfa",
@@ -119,7 +189,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1072,
+        1776,
         0
       ],
       "id": "e728bda0-e806-41f0-a30a-01b34b8c67e1",
@@ -133,12 +203,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst rawText = response.content?.[0]?.text ?? '';\n\nconst jsonMatch = rawText.match(/\\{[\\s\\S]*\\}/);\nif (!jsonMatch) {\n  throw new Error('Claude 回應無法解析為 JSON：' + rawText.substring(0, 200));\n}\n\nconst parsed = JSON.parse(jsonMatch[0]);\nconst required = ['test_file_path', 'test_file_content', 'impl_file_path', 'impl_file_content', 'commit_message'];\nconst missing = required.filter(k => !parsed[k]);\n\nif (missing.length > 0) {\n  throw new Error(`Claude 回應缺少必要欄位：${missing.join(', ')}`);\n}\n\nconst prev = $('準備 Claude Body').first().json;\nreturn [{\n  json: {\n    ...parsed,\n    jiraKey: prev.jiraKey,\n    jiraUrl: prev.jiraUrl,\n    issueId: prev.issueId,\n  }\n}];"
+        "jsCode": "const response = $input.first().json;\nconst rawText = response.content?.[0]?.text ?? '';\n\nif (response.stop_reason === 'max_tokens') {\n  throw new Error('Claude 回應被 max_tokens 截斷，尚未產出完整 JSON。請提高 準備 Claude Body 節點的 max_tokens 設定。回應片段：' + rawText.slice(-300));\n}\n\nconst jsonMatch = rawText.match(/\\{[\\s\\S]*\\}/);\nif (!jsonMatch) {\n  throw new Error('Claude 回應無法解析為 JSON：' + rawText.substring(0, 200));\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonMatch[0]);\n} catch (e) {\n  throw new Error('Claude 回應 JSON 解析失敗（可能被截斷或格式錯誤）：' + e.message + ' | 回應結尾：' + rawText.slice(-300));\n}\nconst required = ['test_file_path', 'test_file_content', 'impl_file_path', 'impl_file_content', 'commit_message'];\nconst missing = required.filter(k => !parsed[k]);\n\nif (missing.length > 0) {\n  throw new Error(`Claude 回應缺少必要欄位：${missing.join(', ')}`);\n}\n\nconst prev = $('準備 Claude Body').first().json;\nreturn [{\n  json: {\n    ...parsed,\n    jiraKey: prev.jiraKey,\n    jiraUrl: prev.jiraUrl,\n    issueId: prev.issueId,\n    summary: prev.summary,\n    slug: prev.slug,\n    taskId: prev.taskId,\n    sourceFile: prev.sourceFile,\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1280,
+        1952,
         0
       ],
       "id": "2109dbfa-9125-4e69-ba70-a4841c282abe",
@@ -146,12 +216,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service';\n\nreturn [{\n  json: {\n    ...item,\n    body_gitCheckout: JSON.stringify({\n      command: 'git checkout main && git pull origin main && git checkout -b feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_writeTest: JSON.stringify({\n      filePath: basePath + '/' + item.test_file_path,\n      content: item.test_file_content\n    }),\n    body_runTest: JSON.stringify({\n      command: 'npm run test',\n      cwd: basePath\n    }),\n    body_writeImpl: JSON.stringify({\n      filePath: basePath + '/' + item.impl_file_path,\n      content: item.impl_file_content\n    }),\n    body_gitCommit: JSON.stringify({\n      command: 'git add . && git commit -m ' + JSON.stringify(item.commit_message) + ' && git push origin feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_githubPR: JSON.stringify({\n      title: '[' + item.jiraKey + '] ' + item.summary,\n      head: 'feature/' + item.jiraKey,\n      base: 'main',\n      body: '## ADW 自動產生 PR\\n\\n- Jira：' + item.jiraUrl + '\\n- 由 ADW Phase 3 自動建立\\n\\n## TDD 驗證\\n- 紅燈確認（測試先 Fail）\\n- 綠燈確認（測試全數 Pass）'\n    })\n  }\n}];"
+        "jsCode": "const item = $input.first().json;\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent';\n\nreturn [{\n  json: {\n    ...item,\n    body_gitCheckout: JSON.stringify({\n      command: 'git checkout main && git pull origin main && git checkout -b feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_writeTest: JSON.stringify({\n      filePath: basePath + '/' + item.test_file_path,\n      content: item.test_file_content\n    }),\n    body_runTest: JSON.stringify({\n      command: 'npm run test',\n      cwd: basePath\n    }),\n    body_writeImpl: JSON.stringify({\n      filePath: basePath + '/' + item.impl_file_path,\n      content: item.impl_file_content\n    }),\n    body_gitCommit: JSON.stringify({\n      command: 'git add . && git commit -m ' + JSON.stringify(item.commit_message) + ' && git push origin feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_githubPR: JSON.stringify({\n      title: '[' + item.jiraKey + '] ' + item.summary,\n      head: 'feature/' + item.jiraKey,\n      base: 'main',\n      body: '## ASUS 自動產生 PR\\n\\n- Jira：' + item.jiraUrl + '\\n- 由 ASUS Phase 3 自動建立\\n\\n## TDD 驗證\\n- 紅燈確認（測試先 Fail）\\n- 綠燈確認（測試全數 Pass）'\n    })\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1456,
+        2128,
         0
       ],
       "id": "4c58af21-09bf-4819-b71f-4e9e99a25309",
@@ -169,11 +239,36 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1632,
+        2304,
         0
       ],
       "id": "15459dae-adef-496d-972a-e4d483c83a0d",
       "name": "git checkout"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            { "id": "checkout-ok", "leftValue": "={{ $json.exitCode }}", "rightValue": 0, "operator": { "type": "number", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2304, 160],
+      "id": "c0000001-2222-4bbb-9001-000000000001",
+      "name": "Guard IF - Checkout 成功"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2480, 320],
+      "id": "c0000002-2222-4bbb-9002-000000000002",
+      "name": "中止（Checkout 失敗，Jira 保持 In Progress）"
     },
     {
       "parameters": {
@@ -187,7 +282,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1808,
+        2480,
         0
       ],
       "id": "572a5a52-32b4-4178-a1c0-92226e6fe893",
@@ -205,7 +300,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1984,
+        2656,
         0
       ],
       "id": "183c77a4-969f-4594-8724-b87b786e8c01",
@@ -238,7 +333,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2160,
+        2832,
         0
       ],
       "id": "0edf0bef-3728-4e13-a096-feda8e2d6ea1",
@@ -249,7 +344,7 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        2208,
+        2880,
         272
       ],
       "id": "cad3e37c-7ddd-4ec9-b229-11fb59cd08d8",
@@ -267,7 +362,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2336,
+        3008,
         0
       ],
       "id": "fe758252-3d4e-4359-b072-28eaa6cfb57d",
@@ -285,7 +380,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2512,
+        3184,
         0
       ],
       "id": "4718a1ab-d7a8-4e50-8745-31dca0bee1b1",
@@ -303,7 +398,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2688,
+        3360,
         0
       ],
       "id": "d7bc0566-9076-4bf5-92ca-39e9f8c168f6",
@@ -336,7 +431,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2864,
+        3536,
         0
       ],
       "id": "3a80245f-8340-44d4-ba03-cae11a225fb4",
@@ -358,7 +453,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3040,
+        3712,
         0
       ],
       "id": "e0c0f0db-6761-4836-9aff-6cc9042f85f3",
@@ -372,12 +467,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst transitions = response.transitions || [];\nconst target = transitions.find(t =>\n  t.name === 'In Review' ||\n  t.name === 'Review' ||\n  (t.to && t.to.name === 'In Review')\n);\n\nif (!target) {\n  const names = transitions.map(t => t.name).join(', ');\n  throw new Error('找不到 In Review 轉換。可用轉換：' + names);\n}\n\nconst prev = $('準備所有 Bodies').first().json;\nreturn [{\n  json: {\n    jiraKey: prev.jiraKey,\n    jiraTransitionId: target.id\n  }\n}];"
+        "jsCode": "const response = $input.first().json;\nconst transitions = response.transitions || [];\nconst target = transitions.find(t =>\n  t.name === 'In Review' ||\n  t.name === 'Review' ||\n  (t.to && t.to.name === 'In Review')\n);\n\nif (!target) {\n  const names = transitions.map(t => t.name).join(', ');\n  throw new Error('找不到 In Review 轉換。可用轉換：' + names);\n}\n\nconst prev = $('準備所有 Bodies').first().json;\nreturn [{\n  json: {\n    jiraKey: prev.jiraKey,\n    jiraTransitionId: target.id,\n    slug: prev.slug,\n    taskId: prev.taskId,\n    sourceFile: prev.sourceFile,\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3216,
+        3888,
         0
       ],
       "id": "1389dd7d-6897-497b-89a1-da8d549c03c0",
@@ -397,7 +492,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3392,
+        4064,
         0
       ],
       "id": "8d8251e5-e0b3-49fb-899e-1a6e2fb3c0f2",
@@ -408,6 +503,73 @@
           "name": "Jira HTTP Basic Auth Credential"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析 Jira Transition').first().json.slug + '\\\\' + $('解析 Jira Transition').first().json.sourceFile }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        4240,
+        0
+      ],
+      "id": "a1b2c3d4-0005-4aaa-9005-000000000005",
+      "name": "讀取任務檔（回寫用）"
+    },
+    {
+      "parameters": {
+        "jsCode": "const taskId = $('解析 Jira Transition').first().json.taskId;\nconst jiraKey = $('解析 Jira Transition').first().json.jiraKey;\nconst slug = $('解析 Jira Transition').first().json.slug;\nconst content = $input.first().json.content ?? '';\nconst filePath = $input.first().json.filePath;\n\nconst headerRegex = new RegExp('(### ' + taskId + ' — .+?)⬜(.*)$', 'm');\nif (!headerRegex.test(content)) {\n  throw new Error(`找不到 ${taskId} 對應的 ⬜ 標頭，可能已經是 ✅ 或格式跑掉，需要人工確認 ${filePath}`);\n}\n\n// 票號註記已在開票階段（T15 回填任務票號）寫入，這裡只需要把圖示改成 ✅，不可重複加註票號\nconst updated = content.replace(headerRegex, (match, before, after) => {\n  return before + '✅' + after;\n});\n\nreturn [{ json: { filePath, content: updated, taskId, jiraKey, slug } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4416,
+        0
+      ],
+      "id": "a1b2c3d4-0006-4aaa-9006-000000000006",
+      "name": "回寫任務狀態"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/write-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: $json.filePath, content: $json.content }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        4592,
+        0
+      ],
+      "id": "a1b2c3d4-0007-4aaa-9007-000000000007",
+      "name": "寫回任務檔"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ command: 'git add ' + $('回寫任務狀態').first().json.filePath + ' && git commit -m ' + JSON.stringify('docs(tasks): 完成 ' + $('回寫任務狀態').first().json.slug + ' ' + $('回寫任務狀態').first().json.taskId + '（' + $('回寫任務狀態').first().json.jiraKey + '）') + ' && git push origin feature/' + $('回寫任務狀態').first().json.jiraKey, cwd: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        4768,
+        0
+      ],
+      "id": "a1b2c3d4-0008-4aaa-9008-000000000008",
+      "name": "git commit（docs）"
     }
   ],
   "pinData": {},
@@ -424,6 +586,50 @@
       ]
     },
     "解析票面": {
+      "main": [
+        [
+          {
+            "node": "讀取 tasks-backend.md",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "讀取 tasks-backend.md": {
+      "main": [
+        [
+          {
+            "node": "讀取 tasks-devops.md",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "讀取 tasks-devops.md": {
+      "main": [
+        [
+          {
+            "node": "讀取 tasks-qa.md",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "讀取 tasks-qa.md": {
+      "main": [
+        [
+          {
+            "node": "擷取任務區塊",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "擷取任務區塊": {
       "main": [
         [
           {
@@ -515,10 +721,20 @@
       "main": [
         [
           {
-            "node": "寫入測試",
+            "node": "Guard IF - Checkout 成功",
             "type": "main",
             "index": 0
           }
+        ]
+      ]
+    },
+    "Guard IF - Checkout 成功": {
+      "main": [
+        [
+          { "node": "寫入測試", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "中止（Checkout 失敗，Jira 保持 In Progress）", "type": "main", "index": 0 }
         ]
       ]
     },
@@ -622,6 +838,50 @@
         [
           {
             "node": "更新 Jira 狀態",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "更新 Jira 狀態": {
+      "main": [
+        [
+          {
+            "node": "讀取任務檔（回寫用）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "讀取任務檔（回寫用）": {
+      "main": [
+        [
+          {
+            "node": "回寫任務狀態",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "回寫任務狀態": {
+      "main": [
+        [
+          {
+            "node": "寫回任務檔",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "寫回任務檔": {
+      "main": [
+        [
+          {
+            "node": "git commit（docs）",
             "type": "main",
             "index": 0
           }
