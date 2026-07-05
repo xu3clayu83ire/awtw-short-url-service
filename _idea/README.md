@@ -1,6 +1,6 @@
-# ADW _idea 草稿文件說明
+# ASUS _idea 草稿文件說明
 
-這五份文件是「AI 驅動自動化開發工作流（ADW）」各階段的需求草稿，
+這五份文件是「AI 驅動自動化開發工作流（ASUS）」各階段的需求草稿，
 設計給你的 `addyosmani-spec` skill 讀取，自動產出三階段規格文件。
 
 ---
@@ -12,19 +12,19 @@
 
 ```bash
 # Phase 1：本地基礎設施 + Notion 資料庫
-/addyosmani-spec adw/_idea/phase1-infrastructure.md
+/addyosmani-saspec adw/_idea/phase1-infrastructure.md
 
 # Phase 2：n8n 自動化分流管線
-/addyosmani-spec adw/_idea/phase2-n8n-pipeline.md
+/addyosmani-saspec adw/_idea/phase2-n8n-pipeline.md
 
 # Phase 3：Jira Webhook → Claude API 全自動開發
-/addyosmani-spec adw/_idea/phase3-ai-agent.md
+/addyosmani-saspec adw/_idea/phase3-ai-agent.md
 
 # Phase 4：GitLab CI/CD + PR 審核流程
-/addyosmani-spec adw/_idea/phase4-cicd-review.md
+/addyosmani-saspec adw/_idea/phase4-cicd-review.md
 
 # Phase 5：AWS CDK 自動部署
-/addyosmani-spec adw/_idea/phase5-aws-deploy.md
+/addyosmani-saspec adw/_idea/phase5-aws-deploy.md
 ```
 
 每份文件執行後，`addyosmani-spec` 會依序產出：

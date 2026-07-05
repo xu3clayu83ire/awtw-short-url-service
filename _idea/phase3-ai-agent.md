@@ -7,7 +7,7 @@
 
 ## 背景與動機
 
-這是 ADW 系統最核心的自動化段。
+這是 ASUS 系統最核心的自動化段。
 當 Jira 票狀態改為「In Progress」時，
 系統必須自動觸發，不需要工程師手動啟動任何工具，
 Claude API 直接讀取票面規格，產出程式碼與測試，
@@ -120,7 +120,7 @@ TDD 完成定義：{{從 Description 解析出的 TDD 欄位}}
 
 1. 手動將一張 Jira 票改為「In Progress」，n8n 自動收到 Webhook
 2. n8n 成功呼叫 Claude API 並取得 JSON 格式的程式碼回應
-3. 本地 Git repo 出現新的 feature branch（格式：`feature/XAM-101`）
+3. 本地 Git repo 出現新的 feature branch（格式：`feature/ASUS-101`）
 4. `test/` 目錄下出現對應的測試檔案，`npm run test` 第一次執行顯示 Fail
 5. `src/` 目錄下出現業務邏輯檔案，`npm run test` 第二次執行顯示 Pass
 6. `git log` 顯示符合格式的 commit

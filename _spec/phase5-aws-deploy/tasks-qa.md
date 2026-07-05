@@ -26,7 +26,7 @@
 | AC4 | 短碼不存在 | 1. `curl <API_URL>/notexist` | HTTP 404，回傳 `{"error":"短網址不存在"}` | | ⬜ |
 | AC5 | Hugo 文件站可訪問 | 1. 瀏覽器開啟 CloudFront URL | Hugo Book 文件站正常顯示，頁面標題與導覽列正確 | | ⬜ |
 | AC6 | Notion 回填 | 1. AC1 完成後等待 5 分鐘<br>2. 開啟 Notion 功能規格總表 | Phase 5 記錄的 `Deploy_URL` 欄位出現 API Gateway URL | | ⬜ |
-| AC7 | Email 通知 | 1. AC1 完成後等待 5 分鐘<br>2. 開啟 SA Gmail | 收到部署完成通知，主旨含 `[ADW 部署完成]`，內文含 API URL 與文件站 URL | | ⬜ |
+| AC7 | Email 通知 | 1. AC1 完成後等待 5 分鐘<br>2. 開啟 SA Gmail | 收到部署完成通知，主旨含 `[ASUS 部署完成]`，內文含 API URL 與文件站 URL | | ⬜ |
 | AC8 | DynamoDB 資料驗證 | 1. AC2 完成後<br>2. AWS Console → DynamoDB → ShortUrlTable → Explore items | 存在 AC2 建立的短碼記錄，含 code / originalUrl / createdAt 三個欄位 | | ⬜ |
 
 ---

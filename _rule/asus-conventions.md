@@ -1,6 +1,6 @@
-# ADW 系統慣例規範
+# ASUS 系統慣例規範
 
-> 本文件僅在使用 ADW（AI 驅動自動化開發工作流）開發時適用。
+> 本文件僅在使用 ASUS（AI 驅動自動化開發工作流）開發時適用。
 > 一般開發規範請參考 `_rule/workflow.md` 與 `_rule/coding-style.md`。
 
 ---
@@ -11,7 +11,7 @@
 
 | 標籤 | 說明 | 適用情境 |
 |------|------|---------|
-| `[AI]` | ADW 自動執行，n8n 觸發 Claude API 產出程式碼 | 產出程式碼檔案（TypeScript / YAML / JSON），可用測試驗證 |
+| `[AI]` | ASUS 自動執行，n8n 觸發 Claude API 產出程式碼 | 產出程式碼檔案（TypeScript / YAML / JSON），可用測試驗證 |
 | `[手動]` | 人工執行，n8n 收到 Webhook 後靜默略過 | Console/UI 操作、敏感憑證設定、一次性環境初始化、無程式碼產出 |
 
 ### 判斷標準
@@ -77,9 +77,9 @@ Notion 主表「功能規格總表」的 `Tasks_To_Open` 欄位，正常應由 M
 
 ---
 
-## spec 文件與 ADW Prompt 對應規則
+## spec 文件與 ASUS Prompt 對應規則
 
-ADW 的 Claude Prompt 從以下位置讀取規格：
+ASUS 的 Claude Prompt 從以下位置讀取規格：
 
 | 資料來源 | 路徑規則 |
 |---------|---------|
@@ -95,7 +95,7 @@ Slug：<slug>
 
 ---
 
-## ADW 支援的任務類型
+## ASUS 支援的任務類型
 
 | 任務類型 | Claude 產出 | 備註 |
 |---------|------------|------|
@@ -107,7 +107,7 @@ Slug：<slug>
 
 ---
 
-## ADW 不支援的任務類型（一律標注 `[手動]`）
+## ASUS 不支援的任務類型（一律標注 `[手動]`）
 
 - AWS / GitHub / n8n Console 設定操作
 - 環境初始化指令（`cdk bootstrap`、`npm install -g`）

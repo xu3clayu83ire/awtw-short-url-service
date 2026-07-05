@@ -73,9 +73,9 @@ n8n 發送的審核通知，內容必須包含：
 ```
 🔔 新 MR 待審核
 
-票號：XAM-101
+票號：ASUS-101
 功能：實作 POST /api/shorten
-分支：feature/XAM-101 → main
+分支：feature/ASUS-101 → main
 CI 狀態：✅ 通過（test / lint / build-docs）
 
 MR 連結：https://gitlab.com/.../merge_requests/42

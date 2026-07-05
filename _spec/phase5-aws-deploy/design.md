@@ -230,7 +230,7 @@ Body: {
 ### Email 通知格式
 
 ```
-主旨：[ADW 部署完成] Phase 5 AWS CDK 部署成功
+主旨：[ASUS 部署完成] Phase 5 AWS CDK 部署成功
 
 內容：
 部署完成通知

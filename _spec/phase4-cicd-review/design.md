@@ -9,7 +9,7 @@
 
 ```mermaid
 flowchart TD
-    A[ADW Phase 3\nAI 推送 feature branch\n建立 GitHub PR] --> B[GitHub Actions\nCI Workflow 觸發]
+    A[ASUS Phase 3\nAI 推送 feature branch\n建立 GitHub PR] --> B[GitHub Actions\nCI Workflow 觸發]
 
     B --> C[Job: test\nnpm run test]
     B --> D[Job: lint\ntsc --noEmit + ESLint]
@@ -142,7 +142,7 @@ return [{
 ### Email 通知格式
 
 ```
-主旨：[ADW 審核通知] [ASUS-N] 功能描述
+主旨：[ASUS 審核通知] [ASUS-N] 功能描述
 
 內容：
 新 PR 待審核
@@ -215,6 +215,6 @@ interface PrNotificationPayload {
 | 風險 | 對策 |
 |------|------|
 | ngrok URL 重啟後改變，GitHub Webhook 失效 | 每次重啟後更新 GitHub repo 的 Webhook URL；Phase 5 改用固定 domain |
-| Email 被標記為垃圾郵件 | 使用 Gmail SMTP + App Password；主旨加入 `[ADW 審核通知]` 前綴方便過濾 |
+| Email 被標記為垃圾郵件 | 使用 Gmail SMTP + App Password；主旨加入 `[ASUS 審核通知]` 前綴方便過濾 |
 | CI 執行時間超過 3 分鐘 | npm ci 加 cache 策略（key: package-lock.json hash）；test / lint 平行執行 |
 | PR title 沒有 Jira 票號格式 | Code node 解析失敗時仍發送 Email，票號欄位顯示「（無票號）」，不中斷流程 |

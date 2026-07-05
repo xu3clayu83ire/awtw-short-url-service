@@ -7,7 +7,7 @@
 
 ## 背景與動機
 
-這是 ADW 系統的核心自動化引擎。
+這是 ASUS 系統的核心自動化引擎。
 當規格文件進入 Notion 且狀態改為「Ready to Plan」時，
 n8n 必須自動把工作分流到兩個方向：
 一路去 Jira 開票，一路把規格同步成 Hugo Book 的靜態 Markdown 文件。
@@ -19,7 +19,7 @@ n8n 必須自動把工作分流到兩個方向：
 
 - n8n 本地容器已啟動，`/data/projects` 掛載完成
 - Notion 三張資料庫已建立
-- Jira 專案已建立（專案代號：XAM）
+- Jira 專案已建立（專案代號：ASUS）
 - n8n 已完成 Notion 與 Jira 的 Credential 設定
 
 ---

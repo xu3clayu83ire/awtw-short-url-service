@@ -7,7 +7,7 @@
 
 ## 背景與動機
 
-這是 ADW 系統的最後一哩路。
+這是 ASUS 系統的最後一哩路。
 當 SA Approve 並 merge 進 main 後，
 GitLab CI 自動執行 AWS CDK 部署，
 把短網址 API 與 Hugo Book 技術文件站同步上線到 AWS，

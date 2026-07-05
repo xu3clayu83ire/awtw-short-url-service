@@ -6,6 +6,10 @@
 
 ---
 
+> **2026-07-05 修訂**：新增「回寫 `tasks-*.md`」步驟，讓 Jira 票關閉後，來源任務清單的 ⬜ 能自動變成 ✅，與 Phase 2 的任務依賴防呆機制形成閉環。同時 Jira 票面解析改成直接取 `TaskId`（`<slug>#<taskId>`），不再靠路徑正則反推 slug。決策記錄見 `_note/decisions.md`。
+
+---
+
 ## 技術架構
 
 ```mermaid
@@ -13,8 +17,8 @@ graph TD
     A[工程師\n將 Jira 票改為 In Progress] -->|Webhook POST| B[ngrok\n公開 URL 轉發]
     B -->|HTTP POST| C[n8n Webhook 節點\nlocalhost:5678]
 
-    C --> D[解析票面\nCode Node]
-    D --> E[讀取 spec.md + design.md\nRead File Node]
+    C --> D[解析票面\nCode Node\n取出 jiraKey/summary/tddDod/slug/taskId]
+    D --> E[讀取 spec.md + design.md\nHTTP → Agent Runner /read-file]
     E --> F[組裝 Prompt\nCode Node]
     F --> G[呼叫 Claude API\nHTTP Request Node]
     G --> H[解析 JSON 回應\nCode Node]
@@ -33,6 +37,8 @@ graph TD
     O --> P[git add + commit\nHTTP Request → /run]
     P --> Q[GitHub API\n建立 Pull Request]
     Q --> R[Jira API\n更新狀態 → In Review]
+    R --> S[回寫 tasks-*.md\n依 TaskId 定位、⬜ 改 ✅\nHTTP → Agent Runner /write-file]
+    S --> T[git add + commit\nHTTP Request → /run\n與程式碼分開一筆 docs commit]
 ```
 
 ---
@@ -58,6 +64,8 @@ graph TD
 | 15 | git commit | HTTP Request → Agent Runner `/run` | `git add` + `git commit` + `git push` |
 | 16 | 建立 GitHub PR | HTTP Request | GitHub API 建立 Pull Request |
 | 17 | 更新 Jira 狀態 | HTTP Request / Jira Node | 票狀態改為 `In Review` |
+| 18 | 回寫 tasks-*.md | HTTP Request → Agent Runner `/write-file` | 依 `TaskId` 定位任務行，`⬜` 改 `✅` |
+| 19 | git commit（docs） | HTTP Request → Agent Runner `/run` | 獨立於程式碼 commit，訊息固定為 `docs(tasks): 完成 <slug> <taskId>（<jiraKey>）` |
 
 ---
 
@@ -110,6 +118,9 @@ Jira 票號：{{jira_key}}
 任務標題：{{jira_summary}}
 TDD 完成定義：{{tdd_dod}}
 
+完整任務內容（含依賴與所有驗收條件）：
+{{task_body}}
+
 規格文件內容：
 {{spec_md_content}}
 
@@ -118,6 +129,8 @@ TDD 完成定義：{{tdd_dod}}
 
 請依照上述規格，產出這張票的測試檔案與業務邏輯實作。
 ```
+
+> `{{task_body}}` 為 2026-07-05 新增變數，直接取票面 Description 裡「完整任務內容」段落的原文（Phase 2 開票時整段寫入，見 `_spec/phase2-n8n-pipeline/design.md`），讓 Claude 拿到的驗收依據跟 `tasks-*.md` 原文一致，不再只靠單行 TDD 命名。
 
 ### Claude API 呼叫設定
 
@@ -220,7 +233,7 @@ Request Body：
   "title": "[ASUS-N] 任務標題",
   "head": "feature/ASUS-N",
   "base": "main",
-  "body": "## 自動產生的 Pull Request\n\n- Jira：{{jira_url}}\n- 由 ADW 自動建立"
+  "body": "## 自動產生的 Pull Request\n\n- Jira：{{jira_url}}\n- 由 ASUS 自動建立"
 }
 ```
 
@@ -244,7 +257,40 @@ Webhook payload 結構：
 }
 ```
 
-TDD DoD 從 Description 中解析 `測試命名：` 欄位後的文字。
+從 Description 解析以下欄位（皆為 Phase 2 開票時寫入的固定格式，見 `_spec/phase2-n8n-pipeline/design.md`）：
+
+| 欄位 | 來源格式 | 正則 |
+|------|---------|------|
+| `tddDod` | `測試命名：` 後的文字 | `/測試命名[：:]\s*\`?([^\`\n"]+)\`?/` |
+| `slug` | `Slug：<slug>` | `/Slug[：:]\s*([^\s"\\]+)/` |
+| `taskId` | `TaskId：<slug>#<taskId>` | `/TaskId[：:]\s*[^\s#"\\]+#(T\d+)/` |
+
+`slug` 用於組出 `讀取 spec.md`／`讀取 design.md` 的檔案路徑；`taskId` 用於流程最後回寫 `tasks-*.md`。兩者都直接來自票面文字，不再需要從路徑反推。
+
+---
+
+## 回寫 tasks-*.md（2026-07-05 新增）
+
+**目的**：讓 `tasks-*.md` 的 ⬜/✅ 反映 Jira 票的實際完成狀態，形成 Phase 2 任務依賴防呆的資訊來源，不再是單向、一次性的快照。
+
+**時機**：Jira 票狀態成功更新為 `In Review` 之後（代表 TDD 綠燈、commit、PR 都已完成）。
+
+**定位邏輯**：用「解析票面」取出的 `taskId`（例如 `phase4-cicd-review#T02`）拆成 `slug` 與 `taskId` 兩段，組出檔案路徑 `_spec/<slug>/tasks-backend.md`（依任務所屬角色可能是 `tasks-devops.md`／`tasks-qa.md`，故需先讀取三份檔案比對哪一份含有該 `taskId` 的標頭），找到後用字串取代：
+
+```javascript
+// 概念示意，實際節點用 Agent Runner /write-file 讀出全文、取代、寫回
+const before = fileContent;
+const headerRegex = new RegExp(`(### ${taskId} — .+?)⬜(.*)$`, 'm');
+const after = before.replace(headerRegex, `$1✅$2 (${jiraKey})`);
+
+if (after === before) {
+  throw new Error(`找不到 ${taskId} 對應的 ⬜ 標頭，可能已經是 ✅ 或格式跑掉`);
+}
+```
+
+**Commit 策略**：回寫 `tasks-*.md` 用**獨立於程式碼異動**的 commit（`docs(tasks): 完成 <slug> <taskId>（<jiraKey>）`），避免跟業務邏輯的 commit 混在一起，方便 code review 時分開看。
+
+**併發風險**：如果同一份 `tasks-*.md` 有多張票同時在跑（例如 T03、T04 各自的 Claude API 呼叫幾乎同時完成），兩個 workflow 執行緒都讀取舊版檔案內容再各自寫回，後寫入的會覆蓋先寫入的取代結果。對策見「已知風險與對策」。
 
 ---
 
@@ -257,6 +303,8 @@ TDD DoD 從 Description 中解析 `測試命名：` 欄位後的文字。
 | Claude API 呼叫方式 | HTTP Request 節點 | n8n 無內建 Anthropic node，HTTP 最直接 | 自訂 n8n node（過度複雜） |
 | git 操作位置 | Agent Runner（Windows Host） | n8n 映像無套件管理器無法安裝 git；本機已有 git 與 GitHub 認證 | n8n 容器內（需自訂 Dockerfile，Docker 硬化版不支援） |
 | TDD 驗證方式 | Execute Command exit code 判斷 | 簡單可靠，測試失敗 exit code ≠ 0 | 解析測試輸出文字（易出錯） |
+| Slug／TaskId 傳遞方式（2026-07-05 修訂） | 票面直寫 `Slug：`／`TaskId：` | 不再靠路徑正則反推，來源穩定（見 `_note/decisions.md`） | 從 `Spec_URL` 路徑正則解析（已證實脆弱） |
+| tasks-*.md 回寫時機（2026-07-05 新增） | Jira 轉 In Review 後、獨立 commit | 跟程式碼異動分開，code review 時容易分辨 | 跟程式碼同一個 commit（混雜文件與程式碼異動） |
 
 ---
 
@@ -269,4 +317,6 @@ TDD DoD 從 Description 中解析 `測試命名：` 欄位後的文字。
 | 測試紅燈未 Fail（Claude 寫了不嚴格的測試） | 中 | TDD 阻斷機制強制中止，Jira 票保持 In Progress |
 | n8n 容器無 git 指令 | 已確認（Docker 硬化版移除套件管理器） | 改用 Agent Runner HTTP 服務在 Windows 本機執行 git，Phase 3 DevOps T01 已完成 |
 | GitHub Token 權限不足 | 低 | Token 需含 `repo` 範圍，Credential 設定時確認 |
-| spec.md 路徑不存在 | 低 | Read File 節點加錯誤處理，路徑依 Notion Slug 動態組裝 |
+| spec.md 路徑不存在 | 低 | Read File 節點加錯誤處理，路徑依票面 Slug 動態組裝 |
+| 同一份 tasks-*.md 被多張票並發回寫，後寫覆蓋先寫（2026-07-05 新增） | 中 | Agent Runner 對同一檔案路徑的寫入請求加序列化佇列（同時間只處理一個），或 n8n workflow 設定同一 phase 的票逐一處理（`Run Once for Each Item` 已經是逐筆，但仍要確保 read-modify-write 是原子操作） |
+| 回寫時找不到對應 ⬜ 標頭（TaskId 打錯字或任務已被手動改過） | 低 | 拋出明確錯誤並中止該步驟，Jira 票狀態仍保持 In Review（程式碼已完成），只是文件回寫失敗需人工介入 |

@@ -167,7 +167,7 @@ ngrok http 5678
 1. 開啟 `https://prostyliu.atlassian.net`
 2. 專案設定 → **Project Settings** → **Webhooks** → **Create webhook**
 3. 填入：
-   - **Name**：`ADW Phase 3`
+   - **Name**：`ASUS Phase 3`
    - **URL**：`https://<ngrok-id>.ngrok.io/webhook/jira-inprogress`
    - **Issue**：勾選 `updated`
    - **JQL**：`project = ASUS AND status = "In Progress"`
@@ -196,7 +196,7 @@ ngrok http 5678
 
 **GitHub Token：**
 1. Add Credential → 搜尋 `GitHub`
-2. Name：`GitHub - ADW`
+2. Name：`GitHub - ASUS`
 3. Access Token：從 GitHub → Settings → Developer settings → Personal access tokens 取得（需含 `repo` 範圍）
 
 **TDD DoD**
