@@ -1,0 +1,645 @@
+{
+  "name": "asus-dev-workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "jira-inprogress",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "53d8fa6c-1fc8-4cb1-bc0b-5304ef4ad5fe",
+      "name": "Webhook",
+      "webhookId": "4ddc611a-fc45-47a9-82fc-fb36cd6076bf"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json.body ?? $input.first().json;\nconst issue = payload.issue ?? {};\nconst fields = issue.fields ?? {};\n\nconst status = fields.status?.name ?? '';\nif (status !== 'In Progress') {\n  return [];\n}\n\nconst descText = JSON.stringify(fields.description ?? '');\nconst tddMatch = descText.match(/測試命名[：:]\\s*`?([^`\\n\"]+)`?/);\nconst tddDod = tddMatch ? tddMatch[1].trim() : '';\n\nconst slugMatch = descText.match(/Spec[：:][^\\n]*?\\/([^\\/\\s\"]+)\\.md/);\nconst slug = slugMatch ? slugMatch[1] : '';\n\nreturn [{\n  json: {\n    jiraKey: issue.key ?? '',\n    summary: fields.summary ?? '',\n    tddDod,\n    slug,\n    jiraUrl: `https://prostyliu.atlassian.net/browse/${issue.key}`,\n    issueId: issue.id ?? '',\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        0
+      ],
+      "id": "bc1dd024-599d-4be5-bb4d-67492bab83dd",
+      "name": "解析票面"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"filePath\": \"D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\phase3-ai-agent\\\\spec.md\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        368,
+        0
+      ],
+      "id": "3d32ef7e-c5a1-4d7f-bc1e-a072120a5afe",
+      "name": "讀取 spec"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"filePath\": \"D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\phase3-ai-agent\\\\design.md\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        560,
+        0
+      ],
+      "id": "0329529b-b9ca-4148-a8ec-94c05715112d",
+      "name": "讀取 design"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ticket = $('解析票面').first().json;\nconst specContent = $('讀取 spec').first().json.content ?? '';\nconst designContent = $('讀取 design').first().json.content ?? '';\n\nconst systemPrompt = `你是一位嚴格遵循 TDD 紀律的 TypeScript 後端工程師。\n你必須依照以下規範產出程式碼：\n- 函式長度上限 50 行\n- 所有錯誤處理必須有繁體中文上下文，禁止 silent fail\n- 測試命名格式：應該_<預期行為>_當<條件>\n- 禁止直接產出業務邏輯，必須先產出測試檔案\n\n你的輸出必須是嚴格的 JSON 格式：\n{\n  \"test_file_path\": \"test/xxx.test.ts\",\n  \"test_file_content\": \"（完整測試檔案內容）\",\n  \"impl_file_path\": \"src/xxx.ts\",\n  \"impl_file_content\": \"（完整業務邏輯內容）\",\n  \"commit_message\": \"feat(backend): [票號] 實作功能描述\"\n}`;\n\nconst userPrompt = `Jira 票號：${ticket.jiraKey}\n任務標題：${ticket.summary}\nTDD 完成定義：${ticket.tddDod}\n\n規格文件內容：\n${specContent}\n\n設計文件內容：\n${designContent}\n\n請依照上述規格，產出這張票的測試檔案與業務邏輯實作。`;\n\nreturn [{ json: { systemPrompt, userPrompt, jiraKey: ticket.jiraKey, jiraUrl: ticket.jiraUrl, issueId: ticket.issueId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        0
+      ],
+      "id": "d4f1fbe7-bba1-41cb-8698-9e50cf28b543",
+      "name": "組裝 Prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nreturn [{\n  json: {\n    ...item,\n    claudeBody: JSON.stringify({\n      model: 'claude-sonnet-4-6',\n      max_tokens: 4096,\n      system: item.systemPrompt,\n      messages: [{ role: 'user', content: item.userPrompt }]\n    })\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        0
+      ],
+      "id": "91f26f2f-d317-4261-be0a-88bd756b4dfa",
+      "name": "準備 Claude Body"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.claudeBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "e728bda0-e806-41f0-a30a-01b34b8c67e1",
+      "name": "呼叫 Claude API",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "JwXk0zNVIaFGavnY",
+          "name": "claude-api"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst rawText = response.content?.[0]?.text ?? '';\n\nconst jsonMatch = rawText.match(/\\{[\\s\\S]*\\}/);\nif (!jsonMatch) {\n  throw new Error('Claude 回應無法解析為 JSON：' + rawText.substring(0, 200));\n}\n\nconst parsed = JSON.parse(jsonMatch[0]);\nconst required = ['test_file_path', 'test_file_content', 'impl_file_path', 'impl_file_content', 'commit_message'];\nconst missing = required.filter(k => !parsed[k]);\n\nif (missing.length > 0) {\n  throw new Error(`Claude 回應缺少必要欄位：${missing.join(', ')}`);\n}\n\nconst prev = $('準備 Claude Body').first().json;\nreturn [{\n  json: {\n    ...parsed,\n    jiraKey: prev.jiraKey,\n    jiraUrl: prev.jiraUrl,\n    issueId: prev.issueId,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        0
+      ],
+      "id": "2109dbfa-9125-4e69-ba70-a4841c282abe",
+      "name": "解析回應"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service';\n\nreturn [{\n  json: {\n    ...item,\n    body_gitCheckout: JSON.stringify({\n      command: 'git checkout main && git pull origin main && git checkout -b feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_writeTest: JSON.stringify({\n      filePath: basePath + '/' + item.test_file_path,\n      content: item.test_file_content\n    }),\n    body_runTest: JSON.stringify({\n      command: 'npm run test',\n      cwd: basePath\n    }),\n    body_writeImpl: JSON.stringify({\n      filePath: basePath + '/' + item.impl_file_path,\n      content: item.impl_file_content\n    }),\n    body_gitCommit: JSON.stringify({\n      command: 'git add . && git commit -m ' + JSON.stringify(item.commit_message) + ' && git push origin feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_githubPR: JSON.stringify({\n      title: '[' + item.jiraKey + '] ' + item.summary,\n      head: 'feature/' + item.jiraKey,\n      base: 'main',\n      body: '## ADW 自動產生 PR\\n\\n- Jira：' + item.jiraUrl + '\\n- 由 ADW Phase 3 自動建立\\n\\n## TDD 驗證\\n- 紅燈確認（測試先 Fail）\\n- 綠燈確認（測試全數 Pass）'\n    })\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "4c58af21-09bf-4819-b71f-4e9e99a25309",
+      "name": "準備所有 Bodies"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.body_gitCheckout }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1632,
+        0
+      ],
+      "id": "15459dae-adef-496d-972a-e4d483c83a0d",
+      "name": "git checkout"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/write-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('準備所有 Bodies').first().json.body_writeTest }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1808,
+        0
+      ],
+      "id": "572a5a52-32b4-4178-a1c0-92226e6fe893",
+      "name": "寫入測試"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('準備所有 Bodies').first().json.body_runTest }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1984,
+        0
+      ],
+      "id": "183c77a4-969f-4594-8724-b87b786e8c01",
+      "name": "執行測試紅燈"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0001-0001-0001",
+              "leftValue": "={{ $json.exitCode }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        0
+      ],
+      "id": "0edf0bef-3728-4e13-a096-feda8e2d6ea1",
+      "name": "紅燈確認"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        272
+      ],
+      "id": "cad3e37c-7ddd-4ec9-b229-11fb59cd08d8",
+      "name": "TDD 阻斷（測試未 Fail）"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/write-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('準備所有 Bodies').first().json.body_writeImpl }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2336,
+        0
+      ],
+      "id": "fe758252-3d4e-4359-b072-28eaa6cfb57d",
+      "name": "寫入業務邏輯"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('準備所有 Bodies').first().json.body_runTest }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2512,
+        0
+      ],
+      "id": "4718a1ab-d7a8-4e50-8745-31dca0bee1b1",
+      "name": "執行測試綠燈"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('準備所有 Bodies').first().json.body_gitCommit }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2688,
+        0
+      ],
+      "id": "d7bc0566-9076-4bf5-92ca-39e9f8c168f6",
+      "name": "git commit"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.github.com/repos/xu3clayu83ire/awtw-short-url-service/pulls",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('準備所有 Bodies').first().json.body_githubPR }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2864,
+        0
+      ],
+      "id": "3a80245f-8340-44d4-ba03-cae11a225fb4",
+      "name": "建立 GitHub PR",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OePuhCZ5vLp06Gsj",
+          "name": "GitHub-Jira-hookasus-phase3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://prostyliu.atlassian.net/rest/api/3/issue/{{ $('準備所有 Bodies').first().json.jiraKey }}/transitions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3040,
+        0
+      ],
+      "id": "e0c0f0db-6761-4836-9aff-6cc9042f85f3",
+      "name": "取得 Jira Transitions",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "tZv9PWFKH8dWAJBR",
+          "name": "Jira HTTP Basic Auth Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst transitions = response.transitions || [];\nconst target = transitions.find(t =>\n  t.name === 'In Review' ||\n  t.name === 'Review' ||\n  (t.to && t.to.name === 'In Review')\n);\n\nif (!target) {\n  const names = transitions.map(t => t.name).join(', ');\n  throw new Error('找不到 In Review 轉換。可用轉換：' + names);\n}\n\nconst prev = $('準備所有 Bodies').first().json;\nreturn [{\n  json: {\n    jiraKey: prev.jiraKey,\n    jiraTransitionId: target.id\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3216,
+        0
+      ],
+      "id": "1389dd7d-6897-497b-89a1-da8d549c03c0",
+      "name": "解析 Jira Transition"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://prostyliu.atlassian.net/rest/api/3/issue/{{ $json.jiraKey }}/transitions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"transition\":{\"id\":\"{{ $json.jiraTransitionId }}\"}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3392,
+        0
+      ],
+      "id": "8d8251e5-e0b3-49fb-899e-1a6e2fb3c0f2",
+      "name": "更新 Jira 狀態",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "tZv9PWFKH8dWAJBR",
+          "name": "Jira HTTP Basic Auth Credential"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "解析票面",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析票面": {
+      "main": [
+        [
+          {
+            "node": "讀取 spec",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "讀取 spec": {
+      "main": [
+        [
+          {
+            "node": "讀取 design",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "讀取 design": {
+      "main": [
+        [
+          {
+            "node": "組裝 Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "組裝 Prompt": {
+      "main": [
+        [
+          {
+            "node": "準備 Claude Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "準備 Claude Body": {
+      "main": [
+        [
+          {
+            "node": "呼叫 Claude API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "呼叫 Claude API": {
+      "main": [
+        [
+          {
+            "node": "解析回應",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析回應": {
+      "main": [
+        [
+          {
+            "node": "準備所有 Bodies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "準備所有 Bodies": {
+      "main": [
+        [
+          {
+            "node": "git checkout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "git checkout": {
+      "main": [
+        [
+          {
+            "node": "寫入測試",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "寫入測試": {
+      "main": [
+        [
+          {
+            "node": "執行測試紅燈",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "執行測試紅燈": {
+      "main": [
+        [
+          {
+            "node": "紅燈確認",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "紅燈確認": {
+      "main": [
+        [
+          {
+            "node": "寫入業務邏輯",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TDD 阻斷（測試未 Fail）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "寫入業務邏輯": {
+      "main": [
+        [
+          {
+            "node": "執行測試綠燈",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "執行測試綠燈": {
+      "main": [
+        [
+          {
+            "node": "git commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "git commit": {
+      "main": [
+        [
+          {
+            "node": "建立 GitHub PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "建立 GitHub PR": {
+      "main": [
+        [
+          {
+            "node": "取得 Jira Transitions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "取得 Jira Transitions": {
+      "main": [
+        [
+          {
+            "node": "解析 Jira Transition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析 Jira Transition": {
+      "main": [
+        [
+          {
+            "node": "更新 Jira 狀態",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8c820217-3941-41a1-a2fe-4f6590daae35",
+  "meta": {
+    "instanceId": "d5467582d0558780a4114f5dae7877a85f46503c7548a96c5fb8fb8a2693dd5c"
+  },
+  "nodeGroups": [],
+  "id": "SUZbxSPac7bbzzla",
+  "tags": []
+}
