@@ -1,3 +1,6 @@
+// AC4 驗收測試用：刻意引入型別錯誤，驗證 CI lint job 會擋下
+const ac4測試型別錯誤: number = 'this is not a number';
+
 export interface PrNotificationPayload {
   jiraKey: string;
   prTitle: string;
