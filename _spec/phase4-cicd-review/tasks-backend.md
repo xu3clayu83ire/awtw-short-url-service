@@ -54,7 +54,7 @@
 
 ---
 
-### T03 — 設定 n8n Gmail SMTP Credential ⬜　👤 手動執行
+### T03 — 設定 n8n Gmail SMTP Credential ⬜　👤 手動執行　(ASUS-112)
 
 **依賴**：T02
 

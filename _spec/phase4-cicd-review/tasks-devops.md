@@ -59,7 +59,7 @@
 
 ---
 
-### T04 — 設定 GitHub Branch Protection ⬜　👤 手動執行
+### T04 — 設定 GitHub Branch Protection ⬜　👤 手動執行　(ASUS-113)
 
 **依賴**：T01、T02
 
