@@ -138,7 +138,22 @@
     },
     {
       "parameters": {
-        "jsCode": "const ticket = $('解析票面').first().json;\nconst specContent = $('讀取 spec').first().json.content ?? '';\nconst designContent = $('讀取 design').first().json.content ?? '';\nconst taskBody = $('擷取任務區塊').first().json.taskBody ?? '';\nconst sourceFile = $('擷取任務區塊').first().json.sourceFile ?? '';\n\nconst systemPrompt = `你是一位嚴格遵循 TDD 紀律的 TypeScript 後端工程師。\n你必須依照以下規範產出程式碼：\n- 函式長度上限 50 行\n- 所有錯誤處理必須有繁體中文上下文，禁止 silent fail\n- 測試命名格式：應該_<預期行為>_當<條件>\n- 禁止直接產出業務邏輯，必須先產出測試檔案\n\n你的輸出必須是嚴格的 JSON 格式：\n{\n  \"test_file_path\": \"test/xxx.test.ts\",\n  \"test_file_content\": \"（完整測試檔案內容）\",\n  \"impl_file_path\": \"src/xxx.ts\",\n  \"impl_file_content\": \"（完整業務邏輯內容）\",\n  \"commit_message\": \"feat(backend): [票號] 實作功能描述\"\n}`;\n\nconst userPrompt = `Jira 票號：${ticket.jiraKey}\n任務標題：${ticket.summary}\nTDD 完成定義：${ticket.tddDod}\n\n完整任務內容（含依賴與所有驗收條件）：\n${taskBody}\n\n規格文件內容：\n${specContent}\n\n設計文件內容：\n${designContent}\n\n請依照上述規格，產出這張票的測試檔案與業務邏輯實作。`;\n\nreturn [{ json: { systemPrompt, userPrompt, jiraKey: ticket.jiraKey, jiraUrl: ticket.jiraUrl, issueId: ticket.issueId, summary: ticket.summary, slug: ticket.slug, taskId: ticket.taskId, sourceFile } }];"
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/read-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\package.json' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1336, 0],
+      "id": "d0000001-3333-4ccc-9001-000000000001",
+      "name": "讀取 package.json"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ticket = $('解析票面').first().json;\nconst specContent = $('讀取 spec').first().json.content ?? '';\nconst designContent = $('讀取 design').first().json.content ?? '';\nconst taskBody = $('擷取任務區塊').first().json.taskBody ?? '';\nconst sourceFile = $('擷取任務區塊').first().json.sourceFile ?? '';\n\nlet availableDeps = [];\ntry {\n  const pkgRaw = $('讀取 package.json').first().json.content ?? '{}';\n  const pkg = JSON.parse(pkgRaw);\n  availableDeps = Object.keys({ ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) });\n} catch (e) {\n  availableDeps = [];\n}\n\nconst systemPrompt = `你是一位嚴格遵循 TDD 紀律的 TypeScript 後端工程師。\n你必須依照以下規範產出程式碼：\n- 函式長度上限 50 行\n- 所有錯誤處理必須有繁體中文上下文，禁止 silent fail\n- 測試命名格式：應該_<預期行為>_當<條件>\n- 禁止直接產出業務邏輯，必須先產出測試檔案\n\n目前 package.json 已安裝的依賴（優先使用這些，不要無故引入新套件）：\n${availableDeps.join(', ') || '（無）'}\n\n如果任務**必須**使用一個不在上面清單裡的套件才能完成，才可以在輸出裡列出 additional_dependencies，\nAgent Runner 會在寫入測試檔前自動執行 npm install。禁止在沒有列出的情況下於程式碼中 import 未安裝的套件。\n\n你的輸出必須是嚴格的 JSON 格式：\n{\n  \"test_file_path\": \"test/xxx.test.ts\",\n  \"test_file_content\": \"（完整測試檔案內容）\",\n  \"impl_file_path\": \"src/xxx.ts\",\n  \"impl_file_content\": \"（完整業務邏輯內容）\",\n  \"additional_dependencies\": [\"套件名稱\"],\n  \"commit_message\": \"feat(backend): [票號] 實作功能描述\"\n}\n\"additional_dependencies\" 沒有需要時請輸出空陣列 []，不可省略此欄位。`;\n\nconst userPrompt = `Jira 票號：${ticket.jiraKey}\n任務標題：${ticket.summary}\nTDD 完成定義：${ticket.tddDod}\n\n完整任務內容（含依賴與所有驗收條件）：\n${taskBody}\n\n規格文件內容：\n${specContent}\n\n設計文件內容：\n${designContent}\n\n請依照上述規格，產出這張票的測試檔案與業務邏輯實作。`;\n\nreturn [{ json: { systemPrompt, userPrompt, jiraKey: ticket.jiraKey, jiraUrl: ticket.jiraUrl, issueId: ticket.issueId, summary: ticket.summary, slug: ticket.slug, taskId: ticket.taskId, sourceFile } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -203,7 +218,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst rawText = response.content?.[0]?.text ?? '';\n\nif (response.stop_reason === 'max_tokens') {\n  throw new Error('Claude 回應被 max_tokens 截斷，尚未產出完整 JSON。請提高 準備 Claude Body 節點的 max_tokens 設定。回應片段：' + rawText.slice(-300));\n}\n\nconst jsonMatch = rawText.match(/\\{[\\s\\S]*\\}/);\nif (!jsonMatch) {\n  throw new Error('Claude 回應無法解析為 JSON：' + rawText.substring(0, 200));\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonMatch[0]);\n} catch (e) {\n  throw new Error('Claude 回應 JSON 解析失敗（可能被截斷或格式錯誤）：' + e.message + ' | 回應結尾：' + rawText.slice(-300));\n}\nconst required = ['test_file_path', 'test_file_content', 'impl_file_path', 'impl_file_content', 'commit_message'];\nconst missing = required.filter(k => !parsed[k]);\n\nif (missing.length > 0) {\n  throw new Error(`Claude 回應缺少必要欄位：${missing.join(', ')}`);\n}\n\nconst prev = $('準備 Claude Body').first().json;\nreturn [{\n  json: {\n    ...parsed,\n    jiraKey: prev.jiraKey,\n    jiraUrl: prev.jiraUrl,\n    issueId: prev.issueId,\n    summary: prev.summary,\n    slug: prev.slug,\n    taskId: prev.taskId,\n    sourceFile: prev.sourceFile,\n  }\n}];"
+        "jsCode": "const response = $input.first().json;\nconst rawText = response.content?.[0]?.text ?? '';\n\nif (response.stop_reason === 'max_tokens') {\n  throw new Error('Claude 回應被 max_tokens 截斷，尚未產出完整 JSON。請提高 準備 Claude Body 節點的 max_tokens 設定。回應片段：' + rawText.slice(-300));\n}\n\nconst jsonMatch = rawText.match(/\\{[\\s\\S]*\\}/);\nif (!jsonMatch) {\n  throw new Error('Claude 回應無法解析為 JSON：' + rawText.substring(0, 200));\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonMatch[0]);\n} catch (e) {\n  throw new Error('Claude 回應 JSON 解析失敗（可能被截斷或格式錯誤）：' + e.message + ' | 回應結尾：' + rawText.slice(-300));\n}\nconst required = ['test_file_path', 'test_file_content', 'impl_file_path', 'impl_file_content', 'commit_message'];\nconst missing = required.filter(k => !parsed[k]);\n\nif (missing.length > 0) {\n  throw new Error(`Claude 回應缺少必要欄位：${missing.join(', ')}`);\n}\n\nconst additionalDependencies = Array.isArray(parsed.additional_dependencies) ? parsed.additional_dependencies.filter(Boolean) : [];\n\nconst prev = $('準備 Claude Body').first().json;\nreturn [{\n  json: {\n    ...parsed,\n    additionalDependencies,\n    jiraKey: prev.jiraKey,\n    jiraUrl: prev.jiraUrl,\n    issueId: prev.issueId,\n    summary: prev.summary,\n    slug: prev.slug,\n    taskId: prev.taskId,\n    sourceFile: prev.sourceFile,\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -216,7 +231,40 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent';\n\nreturn [{\n  json: {\n    ...item,\n    body_gitCheckout: JSON.stringify({\n      command: 'git checkout main && git pull origin main && git checkout -b feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_writeTest: JSON.stringify({\n      filePath: basePath + '/' + item.test_file_path,\n      content: item.test_file_content\n    }),\n    body_runTest: JSON.stringify({\n      command: 'npm run test',\n      cwd: basePath\n    }),\n    body_writeImpl: JSON.stringify({\n      filePath: basePath + '/' + item.impl_file_path,\n      content: item.impl_file_content\n    }),\n    body_gitCommit: JSON.stringify({\n      command: 'git add . && git commit -m ' + JSON.stringify(item.commit_message) + ' && git push origin feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_githubPR: JSON.stringify({\n      title: '[' + item.jiraKey + '] ' + item.summary,\n      head: 'feature/' + item.jiraKey,\n      base: 'main',\n      body: '## ASUS 自動產生 PR\\n\\n- Jira：' + item.jiraUrl + '\\n- 由 ASUS Phase 3 自動建立\\n\\n## TDD 驗證\\n- 紅燈確認（測試先 Fail）\\n- 綠燈確認（測試全數 Pass）'\n    })\n  }\n}];"
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 3 },
+          "conditions": [
+            { "id": "has-deps", "leftValue": "={{ $json.additionalDependencies.length }}", "rightValue": 0, "operator": { "type": "number", "operation": "gt" } }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2020, 160],
+      "id": "d0000002-3333-4ccc-9002-000000000002",
+      "name": "Guard IF - Has Additional Deps"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ command: 'npm install ' + $json.additionalDependencies.join(' '), cwd: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2160, 80],
+      "id": "d0000003-3333-4ccc-9003-000000000003",
+      "name": "npm install 額外依賴"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $('解析回應').first().json;\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent';\n\nreturn [{\n  json: {\n    ...item,\n    body_gitCheckout: JSON.stringify({\n      command: 'git checkout main && git pull origin main && git checkout -b feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_writeTest: JSON.stringify({\n      filePath: basePath + '/' + item.test_file_path,\n      content: item.test_file_content\n    }),\n    body_runTest: JSON.stringify({\n      command: 'npm run test',\n      cwd: basePath\n    }),\n    body_writeImpl: JSON.stringify({\n      filePath: basePath + '/' + item.impl_file_path,\n      content: item.impl_file_content\n    }),\n    body_gitCommit: JSON.stringify({\n      command: 'git add . && git commit -m ' + JSON.stringify(item.commit_message) + ' && git push origin feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_githubPR: JSON.stringify({\n      title: '[' + item.jiraKey + '] ' + item.summary,\n      head: 'feature/' + item.jiraKey,\n      base: 'main',\n      body: '## ASUS 自動產生 PR\\n\\n- Jira：' + item.jiraUrl + '\\n- 由 ASUS Phase 3 自動建立\\n\\n## TDD 驗證\\n- 紅燈確認（測試先 Fail）\\n- 綠燈確認（測試全數 Pass）'\n    })\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -338,6 +386,51 @@
       ],
       "id": "0edf0bef-3728-4e13-a096-feda8e2d6ea1",
       "name": "紅燈確認"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst output = (item.stdout ?? '') + '\\n' + (item.stderr ?? '');\n\n// 環境錯誤（缺套件、模組載入失敗、語法錯誤）不算是有效的 TDD 紅燈，必須跟「測試斷言正確失敗」分開判斷，\n// 否則 exitCode !== 0 會把兩種情況混為一談，誤判環境問題為紅燈通過。\nconst envErrorPatterns = [\n  /Failed to load url/i,\n  /Cannot find module/i,\n  /Cannot find package/i,\n  /ERR_MODULE_NOT_FOUND/i,\n  /SyntaxError/i,\n  /ENOENT.*package\\.json/i,\n];\n\nconst matched = envErrorPatterns.find(re => re.test(output));\nif (matched) {\n  throw new Error(`測試執行失敗是環境問題，不是有效的 TDD 紅燈（比對到樣式：${matched}）。輸出片段：${output.slice(0, 500)}`);\n}\n\nreturn [{ json: item }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2960, 80],
+      "id": "d0000004-3333-4ccc-9004-000000000004",
+      "name": "檢查環境錯誤（紅燈）"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst output = (item.stdout ?? '') + '\\n' + (item.stderr ?? '');\n\nconst envErrorPatterns = [\n  /Failed to load url/i,\n  /Cannot find module/i,\n  /Cannot find package/i,\n  /ERR_MODULE_NOT_FOUND/i,\n  /SyntaxError/i,\n  /ENOENT.*package\\.json/i,\n];\n\nconst matched = envErrorPatterns.find(re => re.test(output));\nif (matched) {\n  throw new Error(`測試執行失敗是環境問題，不是有效的 TDD 綠燈（比對到樣式：${matched}）。輸出片段：${output.slice(0, 500)}`);\n}\n\nreturn [{ json: item }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3480, 0],
+      "id": "d0000005-3333-4ccc-9005-000000000005",
+      "name": "檢查環境錯誤（綠燈）"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            { "id": "green-ok", "leftValue": "={{ $json.exitCode }}", "rightValue": 0, "operator": { "type": "number", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [3640, 0],
+      "id": "d0000006-3333-4ccc-9006-000000000006",
+      "name": "綠燈確認"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3640, 240],
+      "id": "d0000007-3333-4ccc-9007-000000000007",
+      "name": "中止（綠燈未通過，Jira 保持 In Progress）"
     },
     {
       "parameters": {},
@@ -655,6 +748,17 @@
       "main": [
         [
           {
+            "node": "讀取 package.json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "讀取 package.json": {
+      "main": [
+        [
+          {
             "node": "組裝 Prompt",
             "type": "main",
             "index": 0
@@ -699,10 +803,27 @@
       "main": [
         [
           {
-            "node": "準備所有 Bodies",
+            "node": "Guard IF - Has Additional Deps",
             "type": "main",
             "index": 0
           }
+        ]
+      ]
+    },
+    "Guard IF - Has Additional Deps": {
+      "main": [
+        [
+          { "node": "npm install 額外依賴", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "準備所有 Bodies", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "npm install 額外依賴": {
+      "main": [
+        [
+          { "node": "準備所有 Bodies", "type": "main", "index": 0 }
         ]
       ]
     },
@@ -749,11 +870,35 @@
         ]
       ]
     },
+    "檢查環境錯誤（紅燈）": {
+      "main": [
+        [
+          { "node": "紅燈確認", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "檢查環境錯誤（綠燈）": {
+      "main": [
+        [
+          { "node": "綠燈確認", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "綠燈確認": {
+      "main": [
+        [
+          { "node": "git commit", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "中止（綠燈未通過，Jira 保持 In Progress）", "type": "main", "index": 0 }
+        ]
+      ]
+    },
     "執行測試紅燈": {
       "main": [
         [
           {
-            "node": "紅燈確認",
+            "node": "檢查環境錯誤（紅燈）",
             "type": "main",
             "index": 0
           }
@@ -793,7 +938,7 @@
       "main": [
         [
           {
-            "node": "git commit",
+            "node": "檢查環境錯誤（綠燈）",
             "type": "main",
             "index": 0
           }
