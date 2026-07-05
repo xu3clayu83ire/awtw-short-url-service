@@ -12,21 +12,22 @@
 graph TD
     A[Notion 主表\nStatus → Ready to Plan] -->|Trigger| B[n8n Workflow]
 
-    B --> C{Jira_Epic_Key\n已有值?}
+    B --> C{T01 IF\nJira_Epic_Key\n已有值?}
     C -->|是| Z1[跳過，寫 log]
-    C -->|否| D{Tasks_To_Open\n是否為空?}
+    C -->|否| D{T02 IF\nTasks_To_Open\n是否為空?}
 
     D -->|是| Z2[中斷，寫 log]
-    D -->|否| E[Code Node\n切割 Tasks_To_Open]
+    D -->|否| E[T03 Code Node\n切割 Tasks_To_Open]
 
     E --> F[分流 A\nJira 批次開票]
     E --> G[分流 B\nHugo 文件同步]
 
-    F --> F1[Jira Node\n建立 Task × N]
-    F1 --> F2[Notion Node\n回填 Jira_Epic_Key]
+    F --> F1[T04 Jira Node\n建立 Task × N]
+    F1 --> F2[T08 Code Node\n聚合所有 Jira Key]
+    F2 --> F3[T05 Notion Node\n回填 Jira_Epic_Key]
 
-    G --> G1[Code Node\n組裝 Hugo Front Matter]
-    G1 --> G2[Write File Node\n寫入本地掛載目錄]
+    G --> G1[T06 Code Node\n組裝 Hugo Front Matter]
+    G1 --> G2[T07 Code Node\nfs.writeFileSync 寫入本地]
 ```
 
 ---
@@ -36,13 +37,14 @@ graph TD
 | 順序 | 節點名稱 | 型態 | 說明 |
 |------|---------|------|------|
 | 1 | Notion Trigger | Notion Trigger | Poll 模式，每分鐘檢查一次 |
-| 2 | 冪等檢查 | IF | `Jira_Epic_Key` 為空才繼續 |
-| 3 | 空任務檢查 | IF | `Tasks_To_Open` 不為空才繼續 |
-| 4 | 切割任務 | Code（JS） | 依換行符切割，產出任務陣列 |
-| 5A | 建立 Jira Task | Jira Software（迴圈） | 每個任務建一張票 |
-| 6A | 回填 Epic Key | Notion | 更新主表 `Jira_Epic_Key` |
-| 5B | 組裝 Front Matter | Code（JS） | 產出 Hugo Markdown 內容 |
-| 6B | 寫入文件 | Write Binary File | 寫到本地掛載路徑 |
+| 2 | T01 IF | IF | `Jira_Epic_Key` 為空才繼續 |
+| 3 | T02 IF | IF | `Tasks_To_Open` 不為空才繼續 |
+| 4 | T03 Cut Task | Code（JS） | 依換行符切割，產出任務陣列 |
+| 5A | T04 Jira Create an issue | Jira Software（迴圈） | 每個任務建一張票 |
+| 6A | T08 Combine Jira Key | Code（JS） | 聚合所有票號為逗號分隔字串 |
+| 7A | T05 Update Notion | Notion | 更新主表 `Jira_Epic_Key`（含所有票號） |
+| 5B | T06 Hugo Front Matter | Code（JS） | 產出 Hugo Markdown 內容 |
+| 6B | T07 Hugo docs | Code（JS）+ `fs` | 以 `fs.writeFileSync` 寫入本地掛載路徑 |
 
 ---
 
@@ -56,29 +58,30 @@ graph TD
 [DevOps] 建立 DynamoDB Table schema｜TDD: 應該_成功寫入並讀取資料_當Schema正確時
 ```
 
-切割邏輯（Code Node JS）：
+切割邏輯（T03 Cut Task，Run Once for All Items）：
 ```javascript
-const raw = $input.item.json.properties.Tasks_To_Open.rich_text
-  .map(t => t.plain_text).join('');
-
+const item = $input.first().json;
+const raw = item.Tasks_To_Open ?? '';
 const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
 return lines.map(line => {
   const [left, right] = line.split('｜TDD:');
-  const roleMatch = left.match(/^\[(.+?)\]/);
+  const roleMatch = left ? left.match(/^\[(.+?)\]/) : null;
   return {
     json: {
       role: roleMatch ? roleMatch[1] : 'Backend',
-      title: left.replace(/^\[.+?\]\s*/, '').trim(),
+      title: left ? left.replace(/^\[.+?\]\s*/, '').trim() : '',
       tdd: right ? right.trim() : '',
-      notionPageId: $input.item.json.id,
-      notionPageUrl: $input.item.json.url,
-      specUrl: $input.item.json.properties.Spec_URL?.url ?? '',
-      slug: $input.item.json.properties.Slug?.rich_text[0]?.plain_text ?? '',
+      notionPageId: item.id ?? '',
+      notionPageUrl: '',
+      specUrl: item.Spec_URL ?? '',
+      slug: item.Slug ?? '',
     }
   };
 });
 ```
+
+> 注意：n8n Notion Trigger 回傳簡化格式，屬性直接以 `$json.屬性名稱` 存取，無需透過 `.properties.X.rich_text`
 
 ---
 
@@ -101,22 +104,36 @@ return lines.map(line => {
 
 Jira 節點設定：
 - **Host**：`https://prostyliu.atlassian.net`
-- **Project**：`ASUS`
-- **Issue Type**：`Task`
+- **Project**：`awtw-short-url-service`（ID: 10000）
+- **Issue Type**：`任務`（ID: 10003）
 - **執行模式**：`Run Once for Each Item`
+
+---
+
+## Jira Key 聚合邏輯
+
+T08 Combine Jira Key（Run Once for All Items）：
+```javascript
+const items = $input.all();
+const allKeys = items.map(item => item.json.key).join(', ');
+const notionPageId = $('Notion Trigger').first().json.id;
+
+return [{ json: { allKeys, notionPageId } }];
+```
+
+一筆 Notion 功能可對應多張 Jira 票，`Jira_Epic_Key` 儲存所有票號（如 `ASUS-8, ASUS-9`），同時作為冪等判斷依據。
 
 ---
 
 ## Hugo Front Matter 組裝格式
 
-Code Node 產出（JS）：
+T06 Hugo Front Matter（Run Once for All Items）：
 ```javascript
-const props = $input.item.json.properties;
-const title = props.Name.title[0]?.plain_text ?? '';
-const slug = props.Slug?.rich_text[0]?.plain_text ?? '';
-const weight = props.Weight?.number ?? 99;
-const body = $input.item.json.properties.Tasks_To_Open
-  ?.rich_text.map(t => t.plain_text).join('') ?? '';
+const item = $input.first().json;
+const title = item.Name ?? '';
+const slug = item.Slug ?? '';
+const weight = item.Weight ?? 99;
+const body = item.Tasks_To_Open ?? '';
 
 const content = `---
 title: "${title}"
@@ -129,10 +146,23 @@ ${body}
 return [{ json: { slug, content } }];
 ```
 
-Write File 節點寫入路徑：
+T07 Hugo docs（寫檔，Run Once for All Items）：
+```javascript
+const fs = require('fs');
+const item = $input.first().json;
+
+const filePath = `/data/projects/alag-addyosmani-demos/awtw-short-url-service/hugo-docs/content/docs/${item.slug}.md`;
+
+fs.writeFileSync(filePath, item.content, 'utf8');
+
+return [{ json: { success: true, filePath } }];
 ```
-/data/projects/awtw-short-url-service/hugo-docs/content/docs/{{$json.slug}}.md
-```
+
+容器內路徑對應關係：
+| 容器內路徑 | Windows 路徑 |
+|-----------|-------------|
+| `/data/projects/` | `D:\06_Workspace\Workspace_GitHub\xu3clayu83ire\` |
+| `/data/projects/alag-addyosmani-demos/awtw-short-url-service/` | `...\alag-addyosmani-demos\awtw-short-url-service\` |
 
 ---
 
@@ -141,12 +171,35 @@ Write File 節點寫入路徑：
 | Credential | 型態 | 需要的值 |
 |-----------|------|---------|
 | Notion API | Notion API | Internal Integration Token |
-| Jira API | Jira API | Email + API Token（從 Atlassian 帳號設定取得） |
+| Jira API | Jira Software Cloud | Email + API Token |
 
 取得 Jira API Token：
 1. 開啟 `https://id.atlassian.com/manage-profile/security/api-tokens`
 2. 點「Create API token」
 3. 複製 Token，填入 n8n Jira Credential
+
+---
+
+## docker-compose.yml 必要設定
+
+```yaml
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      - NODE_FUNCTION_ALLOW_BUILTIN=fs
+    volumes:
+      - n8n_data:/root/.n8n
+      - ${WORKSPACE_ROOT}:/data/projects
+```
+
+| 設定項目 | 值 | 原因 |
+|---------|-----|------|
+| `user: "0:0"` | root 執行 | 允許寫入 Windows 掛載目錄 |
+| `NODE_FUNCTION_ALLOW_BUILTIN=fs` | 啟用 fs 模組 | Code 節點使用 `require('fs')` |
+| volume: `/root/.n8n` | root home 目錄 | 對應 `user: "0:0"` 的 home 路徑 |
 
 ---
 
@@ -157,8 +210,9 @@ Write File 節點寫入路徑：
 | Notion Trigger 模式 | Poll（每分鐘） | n8n Free 版不支援 Notion Webhook | Webhook（需付費方案） |
 | Jira 連線方式 | n8n 內建 Jira Software node | 官方支援，不需自行處理 OAuth | HTTP Request 自組（過度複雜） |
 | 冪等判斷欄位 | `Jira_Epic_Key` 是否有值 | 簡單可靠，開票後即回填 | 另建狀態欄位（過度設計） |
+| Jira_Epic_Key 內容 | 所有票號逗號分隔 | 一筆功能可有多張票，提升可追溯性 | 只存第一筆（無法看全） |
 | 任務切割語言 | n8n Code Node（JavaScript） | n8n 原生支援，無需安裝依賴 | Python（n8n 不原生支援） |
-| Hugo 文件寫入 | Write Binary File 節點 | 直接寫本地掛載目錄 | Git commit（過度複雜） |
+| Hugo 文件寫入 | Code Node + `fs.writeFileSync` | Write Binary File 對 Docker 掛載目錄有寫入限制 | Write Binary File（有權限問題） |
 
 ---
 
@@ -171,3 +225,4 @@ Write File 節點寫入路徑：
 | Jira API Rate Limit（免費版每 10 秒 50 次） | 低 | 每張票建立間隔無需刻意控制，批次量少 |
 | Write File 路徑不存在導致寫入失敗 | 低 | 確認 hugo-docs/content/docs/ 目錄已存在（Phase 1 已建） |
 | n8n 容器重啟後 Workflow 遺失 | 低 | Workflow JSON 版控於 Git，可隨時匯入還原 |
+| n8n 以 root 執行帶來安全風險 | 低（本地開發） | 僅限本地環境，正式環境需改用適當 uid/gid 並設定目錄權限 |

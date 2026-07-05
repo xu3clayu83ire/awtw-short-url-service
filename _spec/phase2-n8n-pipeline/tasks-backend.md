@@ -19,107 +19,88 @@
 
 ---
 
-## Phase 0 — 冪等與防呆機制（~30min）
+## Phase 0 — 冪等與防呆機制
 
-### T01 — 建立冪等檢查 IF 節點 ⬜
+### T01 — 建立冪等檢查 IF 節點 ✅
 
-**依賴**：DevOps T03
+**節點名稱**：` T01 IF`
 
 在 Notion Trigger 節點之後新增 IF 節點：
-- **條件**：`{{ $json.properties.Jira_Epic_Key.rich_text.length }}` 等於 `0`
+- **條件**：`{{ $json.Jira_Epic_Key.length }}` 等於 `0`（字串比對，啟用 loose type validation）
 - **True**（無值）→ 繼續往下
-- **False**（已有值）→ 接 No Operation 節點，寫入 log：`已有 Jira_Epic_Key，跳過`
+- **False**（已有值）→ 接 `No Operation, do nothing`，log：`已有 Jira_Epic_Key，跳過`
 
-**TDD DoD**
-- 測試命名：`應該_跳過workflow_當Jira_Epic_Key已有值時`
-- 🔴 紅燈：未加 IF 前，重複觸發會往下執行
-- 🟢 綠燈：Test Step 輸入已有 `Jira_Epic_Key` 的資料，IF 走 False 分支停止
-- 覆蓋率：n8n Test Step 驗證
+> 注意：n8n Notion Trigger 回傳簡化格式，`$json.Jira_Epic_Key` 直接為字串，無需存取 `.properties.rich_text`
 
 **完成定義**：`Jira_Epic_Key` 有值時，Test Step 顯示走 False 分支
 
 ---
 
-### T02 — 建立空任務檢查 IF 節點 ⬜
+### T02 — 建立空任務檢查 IF 節點 ✅
 
-**依賴**：T01
+**節點名稱**：` T02 IF`
 
-在冪等 IF True 分支後新增第二個 IF 節點：
-- **條件**：`{{ $json.properties.Tasks_To_Open.rich_text.length }}` 大於 `0`
+在 T01 IF True 分支後新增第二個 IF 節點：
+- **條件**：`{{ $json.Tasks_To_Open.length }}` 大於 `0`（數字比對，啟用 loose type validation）
 - **True**（有內容）→ 繼續往下
-- **False**（為空）→ No Operation，寫入 log：`Tasks_To_Open 為空，中止`
-
-**TDD DoD**
-- 測試命名：`應該_中止workflow_當Tasks_To_Open為空時`
-- 🔴 紅燈：未加 IF 前，空 Tasks_To_Open 會導致後續節點錯誤
-- 🟢 綠燈：Test Step 輸入空 Tasks_To_Open，IF 走 False 分支停止
-- 覆蓋率：n8n Test Step 驗證
+- **False**（為空）→ 接 `No Operation, do nothing1`，log：`Tasks_To_Open 為空，中止`
 
 **完成定義**：`Tasks_To_Open` 為空時，Test Step 顯示走 False 分支
 
 ---
 
-## Phase 1 — 分流 A：Jira 開票（~1h）
+## Phase 1 — 分流 A：Jira 開票
 
-### T03 — 建立切割任務 Code 節點 ⬜
+### T03 — 建立切割任務 Code 節點 ✅
 
-**依賴**：T02
-
-新增 Code 節點（Run Once for Each Item），填入 design.md 的切割邏輯：
+**節點名稱**：`T03 Cut Task`
+**模式**：Run Once for All Items
 
 ```javascript
-const raw = $input.item.json.properties.Tasks_To_Open.rich_text
-  .map(t => t.plain_text).join('');
-
+const item = $input.first().json;
+const raw = item.Tasks_To_Open ?? '';
 const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
 return lines.map(line => {
   const [left, right] = line.split('｜TDD:');
-  const roleMatch = left.match(/^\[(.+?)\]/);
+  const roleMatch = left ? left.match(/^\[(.+?)\]/) : null;
   return {
     json: {
       role: roleMatch ? roleMatch[1] : 'Backend',
-      title: left.replace(/^\[.+?\]\s*/, '').trim(),
+      title: left ? left.replace(/^\[.+?\]\s*/, '').trim() : '',
       tdd: right ? right.trim() : '',
-      notionPageId: $input.item.json.id,
-      notionPageUrl: $input.item.json.url,
-      specUrl: $input.item.json.properties.Spec_URL?.url ?? '',
-      slug: $input.item.json.properties.Slug?.rich_text[0]?.plain_text ?? '',
+      notionPageId: item.id ?? '',
+      notionPageUrl: '',
+      specUrl: item.Spec_URL ?? '',
+      slug: item.Slug ?? '',
     }
   };
 });
 ```
 
-**TDD DoD**
-- 測試命名：`應該_正確切割成任務陣列_當Tasks_To_Open有兩行時`
-- 🔴 紅燈：Test Step 輸入 2 行任務，輸出仍為原始字串（未切割）
-- 🟢 綠燈：輸出為 2 個 JSON 物件，各含 `role`、`title`、`tdd` 欄位
-- 覆蓋率：n8n Test Step 驗證
+> 注意：原設計為 Run Once for Each Item，實際因 n8n 格式限制改為 Run Once for All Items，以 `$input.first().json` 取得 Notion 資料
 
-**完成定義**：Test Step 輸入 `[Backend] 任務A｜TDD: 測試A\n[DevOps] 任務B｜TDD: 測試B`，輸出 2 個物件
+**完成定義**：Test Step 輸入 2 行任務，輸出 2 個 JSON 物件，各含 `role`、`title`、`tdd` 欄位
 
 ---
 
-### T04 — 建立 Jira Task 開票節點 ⬜
+### T04 — 建立 Jira Task 開票節點 ✅
 
-**依賴**：T03
+**節點名稱**：`T04 Jira Create an issue`
+**模式**：Run Once for Each Item
 
-新增 Jira Software 節點（Run Once for Each Item）：
-- **Credential**：`Jira - ASUS`
-- **Operation**：Create Issue
-- **Project**：`ASUS`
-- **Issue Type**：`Task`
+- **Credential**：`Jira SW Cloud account`
+- **Project**：`awtw-short-url-service`（ID: 10000）
+- **Issue Type**：`任務`（ID: 10003）
 - **Summary**：`{{ $json.title }}`
-- **Description**（ADF 格式）：依 design.md 票面格式組裝
-
-Description 內容：
+- **Description**：
 ```
 ## 任務說明
 {{ $json.title }}
 
 ## TDD 完成定義 (DoD)
 - [ ] 測試命名：`{{ $json.tdd }}`
-- [ ] 🔴 紅燈：測試必須先 Fail，截圖或終端機輸出為憑
+- [ ] 🔴 紅燈：測試必須先 Fail
 - [ ] 🟢 綠燈：實作後測試 Pass，覆蓋率 100%
 - [ ] 🔵 藍燈：重構完成，git commit 已執行
 
@@ -128,50 +109,57 @@ Description 內容：
 - Spec：{{ $json.specUrl }}
 ```
 
-**TDD DoD**
-- 測試命名：`應該_成功建立Jira票_當任務資料正確時`
-- 🔴 紅燈：Test Step 前，Jira ASUS 看板無對應票
-- 🟢 綠燈：Test Step 後，Jira 出現一張 Task 票，票面含完整 TDD DoD
-- 覆蓋率：Jira UI 驗證
-
-**完成定義**：Jira ASUS 看板出現測試票，Description 格式符合規範
+**完成定義**：Jira ASUS 看板出現對應 Task 票，票面含完整 TDD DoD
 
 ---
 
-### T05 — 建立回填 Jira_Epic_Key Notion 節點 ⬜
+### T08 — 建立 Combine Jira Key Code 節點 ✅
 
-**依賴**：T04
+**節點名稱**：`T08 Combine Jira Key`
+**模式**：Run Once for All Items
 
-在 Jira 開票節點之後新增 Notion 節點：
-- **Operation**：Update Page
-- **Page ID**：`{{ $('切割任務').item.json.notionPageId }}`
-- **Property**：`Jira_Epic_Key` → `{{ $json.key }}`（Jira 節點回傳的票號，如 `ASUS-1`）
-
-**TDD DoD**
-- 測試命名：`應該_回填JiraKey到Notion_當Jira票建立成功時`
-- 🔴 紅燈：Test Step 前，Notion 主表 `Jira_Epic_Key` 欄位為空
-- 🟢 綠燈：Test Step 後，Notion 主表該筆資料 `Jira_Epic_Key` 填入票號（如 `ASUS-1`）
-- 覆蓋率：Notion UI 驗證
-
-**完成定義**：Notion 主表測試資料的 `Jira_Epic_Key` 欄位被自動填入
-
----
-
-## Phase 2 — 分流 B：Hugo 文件同步（~30min）
-
-### T06 — 建立 Hugo Front Matter 組裝 Code 節點 ⬜
-
-**依賴**：T02（與分流 A 並行，接在空任務 IF True 後）
-
-新增 Code 節點，填入 design.md 的組裝邏輯：
+> 此節點為實作過程新增，原規格未包含。用途：將 T04 產生的所有 Jira 票號聚合為逗號分隔字串，支援一筆 Notion 資料對應多張 Jira 票。
 
 ```javascript
-const props = $input.item.json.properties;
-const title = props.Name.title[0]?.plain_text ?? '';
-const slug = props.Slug?.rich_text[0]?.plain_text ?? '';
-const weight = props.Weight?.number ?? 99;
-const body = props.Tasks_To_Open
-  ?.rich_text.map(t => t.plain_text).join('') ?? '';
+const items = $input.all();
+const allKeys = items.map(item => item.json.key).join(', ');
+const notionPageId = $('Notion Trigger').first().json.id;
+
+return [{ json: { allKeys, notionPageId } }];
+```
+
+**完成定義**：輸出包含 `allKeys`（如 `ASUS-8, ASUS-9`）與 `notionPageId`
+
+---
+
+### T05 — 建立回填 Jira_Epic_Key Notion 節點 ✅
+
+**節點名稱**：`T05 Update Notion`
+
+- **Operation**：Update Page
+- **Page ID**：`{{ $json.notionPageId }}`（來自 T08）
+- **Property**：`Jira_Epic_Key` → `{{ $json.allKeys }}`（來自 T08，含所有票號）
+
+> 注意：原規格只回填第一張票號，實際實作改為回填所有票號（逗號分隔）以提升可追溯性
+
+**完成定義**：Notion 主表該筆資料 `Jira_Epic_Key` 填入所有票號（如 `ASUS-8, ASUS-9`）
+
+---
+
+## Phase 2 — 分流 B：Hugo 文件同步
+
+### T06 — 建立 Hugo Front Matter 組裝 Code 節點 ✅
+
+**節點名稱**：`T06 Hugo Front Matter`
+**模式**：Run Once for All Items
+**連接點**：T02 IF True 分支（與分流 A 並行）
+
+```javascript
+const item = $input.first().json;
+const title = item.Name ?? '';
+const slug = item.Slug ?? '';
+const weight = item.Weight ?? 99;
+const body = item.Tasks_To_Open ?? '';
 
 const content = `---
 title: "${title}"
@@ -184,13 +172,43 @@ ${body}
 return [{ json: { slug, content } }];
 ```
 
-**TDD DoD**
-- 測試命名：`應該_產出正確FrontMatter_當Notion屬性完整時`
-- 🔴 紅燈：Test Step 前，輸出不含 `---` Front Matter 區塊
-- 🟢 綠燈：Test Step 後，輸出含 `title`、`weight` 的 YAML Front Matter
-- 覆蓋率：n8n Test Step 驗證
+> 注意：原設計直接取 `$input.item.json.properties`，實際改用 n8n 簡化格式直接存取屬性
 
-**完成定義**：Test Step 輸出的 `content` 欄位包含正確 Front Matter 格式
+**完成定義**：Test Step 輸出含 `title`、`weight` 的 YAML Front Matter 格式
+
+---
+
+### T07 — 建立 Hugo 文件寫入 Code 節點 ✅
+
+**節點名稱**：`T07 Hugo docs`
+**模式**：Run Once for All Items
+
+> 注意：原規格使用 Write Binary File 節點，實際因 n8n 容器權限問題改用 Code 節點 + Node.js `fs` 模組。需在 docker-compose.yml 設定 `NODE_FUNCTION_ALLOW_BUILTIN=fs`，容器執行身份改為 root（`user: "0:0"`）。
+
+```javascript
+const fs = require('fs');
+const item = $input.first().json;
+
+const filePath = `/data/projects/alag-addyosmani-demos/awtw-short-url-service/hugo-docs/content/docs/${item.slug}.md`;
+
+fs.writeFileSync(filePath, item.content, 'utf8');
+
+return [{ json: { success: true, filePath } }];
+```
+
+**完成定義**：`hugo-docs/content/docs/<slug>.md` 存在且 Front Matter 格式正確
+
+---
+
+## 實作備註
+
+| 項目 | 原設計 | 實際實作 | 原因 |
+|------|--------|---------|------|
+| Notion Trigger 資料格式 | `$json.properties.X.rich_text` | `$json.X`（簡化格式） | n8n Notion Trigger 自動展平屬性 |
+| T03 執行模式 | Run Once for Each Item | Run Once for All Items | `$input.item` 在此模式下有相容性問題 |
+| T05 回填內容 | 第一張票號 | 所有票號（逗號分隔） | 提升可追溯性 |
+| T07 寫檔方式 | Write Binary File 節點 | Code 節點 + `fs` 模組 | Write Binary File 對 Docker 掛載目錄有寫入限制 |
+| T08 | 原規格無此節點 | 新增聚合節點 | 支援多票號回填需求 |
 
 ---
 
@@ -203,6 +221,8 @@ return [{ json: { slug, content } }];
 [Backend] 建立空任務檢查 IF 節點｜TDD: 應該_中止workflow_當Tasks_To_Open為空時
 [Backend] 建立切割任務 Code 節點｜TDD: 應該_正確切割成任務陣列_當Tasks_To_Open有兩行時
 [Backend] 建立 Jira Task 開票節點｜TDD: 應該_成功建立Jira票_當任務資料正確時
-[Backend] 建立回填 Jira_Epic_Key Notion 節點｜TDD: 應該_回填JiraKey到Notion_當Jira票建立成功時
+[Backend] 建立 Combine Jira Key Code 節點｜TDD: 應該_聚合所有票號_當有多張Jira票時
+[Backend] 建立回填 Jira_Epic_Key Notion 節點｜TDD: 應該_回填所有JiraKey到Notion_當Jira票建立成功時
 [Backend] 建立 Hugo Front Matter 組裝 Code 節點｜TDD: 應該_產出正確FrontMatter_當Notion屬性完整時
+[Backend] 建立 Hugo 文件寫入 Code 節點｜TDD: 應該_成功寫入md檔案_當FrontMatter組裝正確時
 ```

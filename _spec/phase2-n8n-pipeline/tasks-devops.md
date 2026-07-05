@@ -84,15 +84,43 @@
 
 ---
 
-### T04 — 建立 Write File 節點（分流 B 終點）⬜
+### T04 — 建立 Hugo 文件寫入節點（分流 B 終點）✅
 
 **依賴**：Backend T06
 
-新增 Write Binary File 節點：
-1. 接在「組裝 Front Matter」Code Node 之後
-2. File Path 設為：`/data/projects/awtw-short-url-service/hugo-docs/content/docs/{{ $json.slug }}.md`
-3. File Content 設為：`{{ $json.content }}`
-4. 使用 Test Step 驗證寫入結果
+> 注意：原規格使用 Write Binary File 節點，實際因 n8n 容器對 Docker 掛載目錄有寫入限制，改用 Code 節點 + Node.js `fs` 模組。
+
+**Step 1：更新 docker-compose.yml**
+
+在 `n8n/docker-compose.yml` 新增以下設定：
+```yaml
+services:
+  n8n:
+    user: "0:0"                          # 以 root 執行，允許寫入掛載目錄
+    environment:
+      - NODE_FUNCTION_ALLOW_BUILTIN=fs   # 允許 Code 節點使用 fs 模組
+    volumes:
+      - n8n_data:/root/.n8n              # root 使用者的 home 目錄
+```
+
+重啟容器：`docker compose down && docker compose up -d`
+
+**Step 2：新增 Code 節點（T07 Hugo docs）**
+
+接在「T06 Hugo Front Matter」之後，模式選 `Run Once for All Items`：
+
+```javascript
+const fs = require('fs');
+const item = $input.first().json;
+
+const filePath = `/data/projects/alag-addyosmani-demos/awtw-short-url-service/hugo-docs/content/docs/${item.slug}.md`;
+
+fs.writeFileSync(filePath, item.content, 'utf8');
+
+return [{ json: { success: true, filePath } }];
+```
+
+> 容器內路徑 `/data/projects/` 對應 Windows `D:\06_Workspace\Workspace_GitHub\xu3clayu83ire\`，需含 `alag-addyosmani-demos/` 子目錄層
 
 **TDD DoD**
 - 測試命名：`應該_成功寫入md檔案_當FrontMatter組裝正確時`
@@ -100,7 +128,7 @@
 - 🟢 綠燈：Test Step 後，目錄下出現正確命名的 `.md` 檔案，內容含 Front Matter
 - 覆蓋率：檔案系統驗證
 
-**完成定義**：`hugo-docs/content/docs/test-slug.md` 存在且 Front Matter 格式正確
+**完成定義**：`hugo-docs/content/docs/<slug>.md` 存在且 Front Matter 格式正確
 
 ---
 
@@ -109,7 +137,7 @@
 **依賴**：所有節點建置完成，Workflow 啟用後
 
 1. n8n 介面：Workflow → Download（匯出 JSON）
-2. 儲存至 `awtw-short-url-service/n8n-workflows/adw-notion-to-jira-hugo.json`
+2. 儲存至 `awtw-short-url-service/n8n-workflows/asus-notion-to-jira-hugo.json`
 3. git commit
 
 **TDD DoD**
@@ -118,7 +146,7 @@
 - 🟢 綠燈：匯出後，JSON 檔案可成功匯入 n8n 並還原所有節點
 - 覆蓋率：匯入測試驗證
 
-**完成定義**：`n8n-workflows/adw-notion-to-jira-hugo.json` 已版控，可成功匯入還原
+**完成定義**：`n8n-workflows/asus-notion-to-jira-hugo.json` 已版控，可成功匯入還原
 
 ---
 
