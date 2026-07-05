@@ -38,3 +38,4 @@ export function parsePrInfo(input: RawPayload): PrNotificationPayload {
     author: pr.user?.login ?? '',
   };
 }
+export const ac4重測型別錯誤: number = 'not a number';
