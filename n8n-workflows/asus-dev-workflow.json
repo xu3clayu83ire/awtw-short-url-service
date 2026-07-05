@@ -36,7 +36,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\tasks-backend.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\tasks-backend.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -55,7 +55,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\tasks-devops.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\tasks-devops.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -74,7 +74,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\tasks-qa.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\tasks-qa.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -106,7 +106,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\spec.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\spec.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -124,7 +124,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\design.md' }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\design.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -216,7 +216,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service';\n\nreturn [{\n  json: {\n    ...item,\n    body_gitCheckout: JSON.stringify({\n      command: 'git checkout main && git pull origin main && git checkout -b feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_writeTest: JSON.stringify({\n      filePath: basePath + '/' + item.test_file_path,\n      content: item.test_file_content\n    }),\n    body_runTest: JSON.stringify({\n      command: 'npm run test',\n      cwd: basePath\n    }),\n    body_writeImpl: JSON.stringify({\n      filePath: basePath + '/' + item.impl_file_path,\n      content: item.impl_file_content\n    }),\n    body_gitCommit: JSON.stringify({\n      command: 'git add . && git commit -m ' + JSON.stringify(item.commit_message) + ' && git push origin feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_githubPR: JSON.stringify({\n      title: '[' + item.jiraKey + '] ' + item.summary,\n      head: 'feature/' + item.jiraKey,\n      base: 'main',\n      body: '## ASUS 自動產生 PR\\n\\n- Jira：' + item.jiraUrl + '\\n- 由 ASUS Phase 3 自動建立\\n\\n## TDD 驗證\\n- 紅燈確認（測試先 Fail）\\n- 綠燈確認（測試全數 Pass）'\n    })\n  }\n}];"
+        "jsCode": "const item = $input.first().json;\nconst basePath = 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent';\n\nreturn [{\n  json: {\n    ...item,\n    body_gitCheckout: JSON.stringify({\n      command: 'git checkout main && git pull origin main && git checkout -b feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_writeTest: JSON.stringify({\n      filePath: basePath + '/' + item.test_file_path,\n      content: item.test_file_content\n    }),\n    body_runTest: JSON.stringify({\n      command: 'npm run test',\n      cwd: basePath\n    }),\n    body_writeImpl: JSON.stringify({\n      filePath: basePath + '/' + item.impl_file_path,\n      content: item.impl_file_content\n    }),\n    body_gitCommit: JSON.stringify({\n      command: 'git add . && git commit -m ' + JSON.stringify(item.commit_message) + ' && git push origin feature/' + item.jiraKey,\n      cwd: basePath\n    }),\n    body_githubPR: JSON.stringify({\n      title: '[' + item.jiraKey + '] ' + item.summary,\n      head: 'feature/' + item.jiraKey,\n      base: 'main',\n      body: '## ASUS 自動產生 PR\\n\\n- Jira：' + item.jiraUrl + '\\n- 由 ASUS Phase 3 自動建立\\n\\n## TDD 驗證\\n- 紅燈確認（測試先 Fail）\\n- 綠燈確認（測試全數 Pass）'\n    })\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -510,7 +510,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('解析 Jira Transition').first().json.slug + '\\\\' + $('解析 Jira Transition').first().json.sourceFile }) }}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service-agent\\\\_spec\\\\' + $('解析 Jira Transition').first().json.slug + '\\\\' + $('解析 Jira Transition').first().json.sourceFile }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -559,7 +559,7 @@
         "url": "http://host.docker.internal:3001/run",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ command: 'git add ' + $('回寫任務狀態').first().json.filePath + ' && git commit -m ' + JSON.stringify('docs(tasks): 完成 ' + $('回寫任務狀態').first().json.slug + ' ' + $('回寫任務狀態').first().json.taskId + '（' + $('回寫任務狀態').first().json.jiraKey + '）') + ' && git push origin feature/' + $('回寫任務狀態').first().json.jiraKey, cwd: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service' }) }}",
+        "jsonBody": "={{ JSON.stringify({ command: 'git add ' + $('回寫任務狀態').first().json.filePath + ' && git commit -m ' + JSON.stringify('docs(tasks): 完成 ' + $('回寫任務狀態').first().json.slug + ' ' + $('回寫任務狀態').first().json.taskId + '（' + $('回寫任務狀態').first().json.jiraKey + '）') + ' && git push origin feature/' + $('回寫任務狀態').first().json.jiraKey, cwd: 'D:/06_Workspace/Workspace_GitHub/xu3clayu83ire/alag-addyosmani-demos/awtw-short-url-service-agent' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",

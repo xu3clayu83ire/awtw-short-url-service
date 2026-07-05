@@ -113,6 +113,22 @@
 - **驗證**：用模擬 payload 測試，手動票正確回傳空陣列（跳過），AI 票正確解析出 taskId/tddDod，兩個 workflow 都已透過 n8n API 重新推送更新
 - **異動範圍**：`n8n-workflows/asus-notion-to-jira-hugo.json`（T07 正規化 execMode 為 'AI'/'手動'，T13 description 樣板加一行）、`n8n-workflows/asus-dev-workflow.json`（解析票面節點）、`_spec/phase2-n8n-pipeline/design.md`
 
+### [2026-07-05] asus-dev-workflow 實測發現的三個連鎖 bug
+- **問題**：ASUS-102 改 In Progress 實測完整流程，一路暴露三個問題：(1) `summary` 欄位在 Prompt 組裝節點的傳遞鏈中遺失，PR 標題變成 `[ASUS-102] undefined`；(2) `git checkout -b` 失敗（working tree 有未 commit 變更擋住）時沒有中斷，導致 Claude 產出的程式碼被直接寫進當下分支、`npm run test` 因為 `package.json` 不存在而誤判為紅燈/綠燈都通過、最後 commit 混進不相關檔案；(3) `max_tokens: 4096` 太小，Claude 回應在 JSON 產出到一半就被截斷，`解析回應` 節點 `JSON.parse` 直接丟 `Unterminated string`
+- **決定**：三個都修——`組裝 Prompt`／`解析回應` 補回 `summary` 欄位；新增 `Guard IF - Checkout 成功` 節點，checkout exitCode ≠ 0 就中止並保留 Jira `In Progress`；`max_tokens` 提高到 8192，並在 `解析回應` 加上明確的截斷偵測錯誤訊息
+- **驗證**：JSON 語法與 Code node 語法都過 node 測試；實際 bug 是透過真實執行 ASUS-102 才發現的，修完後尚待下一輪實測確認
+- **後續發現**：即使修好上述三點，實測仍暴露更深層的問題——`asus-dev-workflow` 的 `basePath` 跟工程師互動用的工作目錄是同一份，見下一筆決策
+
+### [2026-07-05] Agent Runner 獨立工作目錄（git worktree）
+- **問題**：實測發現嚴重的架構缺陷——`basePath` 從最初設計就寫死指向工程師互動開發用的同一個資料夾。Agent Runner 執行 `git checkout main` 會把**整個共用工作目錄**切走，不管工程師手上有沒有未 commit 的變更、也不管排程 workflow 是否同時在背景執行。實測後果：IDE 檔案內容瞬間變成別的分支版本（看起來像資料遺失）、`feature/ASUS-102` 分支從舊版 main 分岔（缺少當時只在 feature 分支上的 package.json）、排程 workflow 的 commit 誤打到這個意外切出來的分支上，甚至已經 push 到 GitHub 遠端並建立 PR
+- **選項**：A. 只靠 checkout 失敗防呆，共用同一個工作目錄（治標不治本——只要 checkout「成功」切到別的分支，工程師的工作目錄還是會被切走）/ B. Agent Runner 改用獨立 git worktree，與工程師互動用的目錄分開 / C. Agent Runner 用完全獨立的 clone（不共用 .git）
+- **決定**：選項 B
+- **理由**：worktree 比獨立 clone 輕量（共用 `.git`、共用 commit 歷史與分支清單），比純防呆更根本地解決「工作目錄被搶走」的問題
+- **異動**：`git worktree add ../awtw-short-url-service-agent main`；`asus-dev-workflow.json` 所有本地檔案路徑（讀 tasks-*.md/spec.md/design.md、寫測試/實作檔、git 指令的 cwd）全部改指向新路徑；`_spec/phase3-ai-agent/design.md` 新增「Agent Runner 獨立工作目錄」章節
+- **後續處理**：worktree 建立時預設 checkout 在 `main`，但 `package.json` scaffold 當時只在 `feature/task-jira-bidirectional-sync` 分支上，導致 worktree 裡 `npm install` 找不到檔案；改用 cherry-pick（commit `24e14ab`）把 scaffold 單獨帶進 `main`，不整批 merge 尚未完整測試的 tasks-*.md 雙向同步設計。cherry-pick 後的 commit 暫時只留在本地 main，未 push 上 origin（使用者決定先不 push，等其他問題都確認沒問題再說）
+- **意外副作用清理**：`feature/ASUS-102` 分支（從舊版 main 分岔、混進無關的 `src/store.ts`、測試結果不可信）已由使用者確認刪除 GitHub 上的分支與 PR，本地分支也已 `git branch -D` 清除
+- **取捨**：worktree 需要各自獨立 `npm install`（`node_modules` 不共用）；且 worktree 只解決「工作目錄被搶走」，如果工程師與 Agent Runner 同時改到同一個檔案，一樣會產生正常的 git 衝突，需要靠任務範圍不重疊來避免
+
 ---
 
 ## API 設計決策

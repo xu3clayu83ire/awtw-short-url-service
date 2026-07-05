@@ -219,6 +219,34 @@ Body: { "command": "git --version", "cwd": "D:\\path\\to\\project" }
 
 ---
 
+## Agent Runner 獨立工作目錄（2026-07-05 新增）
+
+**問題**：原始設計裡 `basePath` 直接指向工程師互動開發用的同一個資料夾（`D:\...\awtw-short-url-service`）。Agent Runner 執行 `git checkout main && git checkout -b feature/<jiraKey>` 時，會把**整個共用的工作目錄**切走——不管工程師手上是否有未 commit 的變更，也不管排程 workflow（`asus-notion-to-jira-hugo`，每分鐘一次）是否同時在背景寫入/commit。
+
+**實測後果**：
+- 工程師 IDE 打開的檔案內容瞬間變成別的分支版本，看起來像資料被還原/遺失
+- `git checkout` 因為工作目錄有未 commit 變更而失敗（若無防呆會被忽略繼續往下跑，見上方「回寫 tasks-*.md」章節的教訓）
+- 就算 checkout 成功，產生的 feature branch 是從「當下 main 剛好長什麼樣子」分岔出去，可能缺少工程師正在另一個分支上開發、尚未合併進 main 的修正（例如這次缺少 `package.json`），導致自動化流程用著過時的環境跑
+- 排程 workflow 若剛好在同一時間執行，會把它的 commit（回填任務票號等）誤打到 Agent Runner 當下切出來的那個 feature branch 上，而不是工程師預期的分支
+
+**決定**：Agent Runner 改用**獨立的 git worktree**，不與工程師互動用的工作目錄共用：
+
+```bash
+# 一次性設定，在專案根目錄執行
+git worktree add ../awtw-short-url-service-agent main
+```
+
+- 新的工作目錄：`D:\06_Workspace\Workspace_GitHub\xu3clayu83ire\alag-addyosmani-demos\awtw-short-url-service-agent`
+- 與原本的工作目錄共用同一個 `.git`（worktree 的特性），commit 歷史、分支清單彼此可見，但**各自可以獨立切換分支**，互不影響
+- `asus-dev-workflow.json` 的 `basePath` 改指向這個新路徑
+- `agent-runner/server.js` 不需要改，`/run`、`/write-file` 都是吃呼叫端傳入的 `cwd`/`filePath`，本來就是通用的
+
+**已知限制**：
+- worktree 目錄也需要 `npm install`（`node_modules` 不共用），第一次使用前要手動跑一次
+- 若工程師與 Agent Runner 同時修改**同一個檔案**並各自 commit，仍然會在下次 `git pull`／merge 時產生正常的 git 衝突——worktree 解決的是「工作目錄被搶走」的問題，不是「內容衝突」的問題，內容衝突要靠任務拆分、範圍不重疊來避免
+
+---
+
 ## GitHub PR 建立
 
 使用 GitHub REST API：
