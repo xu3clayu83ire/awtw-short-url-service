@@ -3,7 +3,7 @@
 > 每個任務設計為獨立可驗證，完成後有明確的檢查點。
 > ⬜ 待執行　✅ 已完成
 >
-> 執行方式：🤖 AI 執行（ADW 自動產出程式碼）　👤 手動執行（Console/CLI 操作）
+> 執行方式：🤖 AI 執行（ASUS 自動產出程式碼）　👤 手動執行（Console/CLI 操作）
 
 ## 前置閱讀
 
@@ -22,7 +22,7 @@
 
 ## Phase 0 — n8n PR 通知 Workflow（~2h）
 
-### T01 — 建立 GitHub PR Webhook ⬜　👤 手動執行
+### T01 — 建立 GitHub PR Webhook ⬜　👤 手動執行　(ASUS-97)
 
 至 GitHub repo → Settings → Webhooks → Add webhook：
 - Payload URL：`https://<ngrok-url>/webhook/github-pr`
@@ -50,7 +50,7 @@
 **完成定義**：
 - 測試命名：`應該_發送Email通知_當GitHub PR被建立`
 - 🔴 紅燈確認：Webhook 收到 payload 但 Email node 未設定，workflow 執行失敗
-- 🟢 綠燈確認：建立測試 PR 後，SA Email 收到通知，主旨格式為 `[ADW 審核通知] [ASUS-N] 功能描述`
+- 🟢 綠燈確認：建立測試 PR 後，SA Email 收到通知，主旨格式為 `[ASUS 審核通知] [ASUS-N] 功能描述`
 
 ---
 
