@@ -2,6 +2,8 @@
 
 > 每個任務設計為獨立可驗證，完成後有明確的檢查點。
 > ⬜ 待執行　✅ 已完成
+>
+> 執行方式：🤖 AI 執行（ADW 自動產出程式碼）　👤 手動執行（Console/CLI 操作）
 
 ## 前置閱讀
 
@@ -19,19 +21,21 @@
 
 ## Phase 0 — AWS CDK 初始化（~1h）
 
-### T01 — 安裝 AWS CDK 並執行 bootstrap ⬜
+### T01 — 安裝 AWS CDK 並執行 bootstrap ⬜　👤 手動執行
 
 ```bash
 npm install -g aws-cdk
 cdk bootstrap aws://ACCOUNT_ID/ap-northeast-1
 ```
 
+> 👤 手動原因：一次性 AWS 環境初始化，需本機 AWS CLI 憑證，無程式碼產出。
+
 **完成定義**：
 - 🟢 綠燈確認：`cdk bootstrap` 執行成功，AWS Console → CloudFormation 出現 `CDKToolkit` Stack
 
 ---
 
-### T02 — 建立 CDK 專案結構 ⬜
+### T02 — 建立 CDK 專案結構 ⬜　🤖 AI 執行
 
 **依賴**：T01
 
@@ -59,7 +63,7 @@ cdk/
 
 ---
 
-### T03 — 實作 ApiStack（Lambda + API Gateway + DynamoDB） ⬜
+### T03 — 實作 ApiStack（Lambda + API Gateway + DynamoDB） ⬜　🤖 AI 執行
 
 **依賴**：T02
 
@@ -76,7 +80,7 @@ cdk/
 
 ---
 
-### T04 — 實作 DocsStack（S3 + CloudFront） ⬜
+### T04 — 實作 DocsStack（S3 + CloudFront） ⬜　🤖 AI 執行
 
 **依賴**：T02
 
@@ -93,7 +97,7 @@ cdk/
 
 ---
 
-### T05 — 建立 GitHub Actions deploy.yml ⬜
+### T05 — 建立 GitHub Actions deploy.yml ⬜　🤖 AI 執行
 
 **依賴**：T03、T04
 
@@ -108,7 +112,7 @@ cdk/
 
 ---
 
-### T06 — 設定 GitHub Actions Secrets ⬜
+### T06 — 設定 GitHub Actions Secrets ⬜　👤 手動執行
 
 **依賴**：T05
 
@@ -116,6 +120,8 @@ cdk/
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 - `N8N_WEBHOOK_URL`
+
+> 👤 手動原因：敏感憑證需手動輸入至 GitHub，不可寫入程式碼。
 
 **完成定義**：
 - 🟢 綠燈確認：deploy.yml 的 AWS 步驟執行時無 credentials 錯誤
@@ -125,10 +131,10 @@ cdk/
 ## Notion 開票格式
 
 ```
-[DevOps] 安裝 AWS CDK 並執行 bootstrap｜TDD: 應該_CDKToolkit Stack存在_當bootstrap完成
-[DevOps] 建立 CDK 專案結構｜TDD: 應該_cdk synth成功_當專案結構正確
-[DevOps] 實作 ApiStack（Lambda + API Gateway + DynamoDB）｜TDD: 應該_建立DynamoDB和Lambda資源_當ApiStack被合成
-[DevOps] 實作 DocsStack（S3 + CloudFront）｜TDD: 應該_建立S3和CloudFront資源_當DocsStack被合成
-[DevOps] 建立 GitHub Actions deploy.yml｜TDD: 應該_觸發deploy job_當merge進main
-[DevOps] 設定 GitHub Actions Secrets（AWS 金鑰）｜TDD: 應該_無credentials錯誤_當deploy執行
+[DevOps][手動] 安裝 AWS CDK 並執行 bootstrap｜TDD: 應該_CDKToolkit Stack存在_當bootstrap完成
+[DevOps][AI] 建立 CDK 專案結構｜TDD: 應該_cdk synth成功_當專案結構正確
+[DevOps][AI] 實作 ApiStack（Lambda + API Gateway + DynamoDB）｜TDD: 應該_建立DynamoDB和Lambda資源_當ApiStack被合成
+[DevOps][AI] 實作 DocsStack（S3 + CloudFront）｜TDD: 應該_建立S3和CloudFront資源_當DocsStack被合成
+[DevOps][AI] 建立 GitHub Actions deploy.yml｜TDD: 應該_觸發deploy job_當merge進main
+[DevOps][手動] 設定 GitHub Actions Secrets（AWS 金鑰）｜TDD: 應該_無credentials錯誤_當deploy執行
 ```

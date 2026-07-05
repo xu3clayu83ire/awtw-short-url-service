@@ -2,6 +2,8 @@
 
 > 每個任務設計為獨立可驗證，完成後有明確的檢查點。
 > ⬜ 待執行　✅ 已完成
+>
+> 執行方式：🤖 AI 執行（ADW 自動產出程式碼）　👤 手動執行（Console/CLI 操作）
 
 ## 前置閱讀
 
@@ -20,12 +22,14 @@
 
 ## Phase 0 — n8n PR 通知 Workflow（~2h）
 
-### T01 — 建立 GitHub PR Webhook ⬜
+### T01 — 建立 GitHub PR Webhook ⬜　👤 手動執行
 
 至 GitHub repo → Settings → Webhooks → Add webhook：
 - Payload URL：`https://<ngrok-url>/webhook/github-pr`
 - Content type：`application/json`
 - Events：`Pull requests`（僅勾選 Pull request）
+
+> 👤 手動原因：GitHub Console 設定操作，無程式碼產出。
 
 **完成定義**：
 - 🟢 綠燈確認：手動建立測試 PR 後，n8n Webhook 節點收到 payload，`action` 欄位為 `opened`
@@ -33,7 +37,7 @@
 
 ---
 
-### T02 — 建立 n8n PR 通知 Workflow ⬜
+### T02 — 建立 n8n PR 通知 Workflow ⬜　🤖 AI 執行
 
 **依賴**：T01
 
@@ -50,7 +54,7 @@
 
 ---
 
-### T03 — 設定 n8n Gmail SMTP Credential ⬜
+### T03 — 設定 n8n Gmail SMTP Credential ⬜　👤 手動執行
 
 **依賴**：T02
 
@@ -60,12 +64,14 @@
 - User：SA Gmail 帳號
 - Password：Gmail App Password（非登入密碼）
 
+> 👤 手動原因：帳號密碼等敏感設定需手動輸入至 n8n，不可寫入程式碼。
+
 **完成定義**：
 - 🟢 綠燈確認：n8n Send Email node 測試連線成功，收件匣出現測試信
 
 ---
 
-### T04 — 實作 PR 資訊解析 Code node ⬜
+### T04 — 實作 PR 資訊解析 Code node ⬜　🤖 AI 執行
 
 **依賴**：T01
 
@@ -98,12 +104,14 @@ return [{
 
 ---
 
-### T05 — 匯出 n8n Workflow JSON ⬜
+### T05 — 匯出 n8n Workflow JSON ⬜　👤 手動執行
 
 **依賴**：T02、T03、T04
 
 將完成的 `github-pr-notify` workflow 從 n8n 匯出為 JSON，存至：
 `n8n-workflows/github-pr-notify.json`
+
+> 👤 手動原因：需從 n8n 介面手動匯出，再 commit 至 repo。
 
 **完成定義**：
 - 🟢 綠燈確認：`n8n-workflows/github-pr-notify.json` 檔案存在，commit 進 main branch
@@ -113,9 +121,9 @@ return [{
 ## Notion 開票格式
 
 ```
-[Backend] 建立 GitHub PR Webhook 至 n8n｜TDD: 應該_接收Webhook_當PR被建立
-[Backend] 建立 n8n github-pr-notify workflow｜TDD: 應該_發送Email通知_當GitHub PR被建立
-[Backend] 設定 n8n Gmail SMTP Credential｜TDD: 應該_發送Email成功_當SMTP設定正確
-[Backend] 實作 PR 資訊解析 Code node｜TDD: 應該_萃取票號_當PR標題符合格式
-[Backend] 匯出 github-pr-notify workflow JSON｜TDD: 應該_存在workflow檔案_當匯出完成
+[Backend][手動] 建立 GitHub PR Webhook 至 n8n｜TDD: 應該_接收Webhook_當PR被建立
+[Backend][AI] 建立 n8n github-pr-notify workflow｜TDD: 應該_發送Email通知_當GitHub PR被建立
+[Backend][手動] 設定 n8n Gmail SMTP Credential｜TDD: 應該_發送Email成功_當SMTP設定正確
+[Backend][AI] 實作 PR 資訊解析 Code node｜TDD: 應該_萃取票號_當PR標題符合格式
+[Backend][手動] 匯出 github-pr-notify workflow JSON｜TDD: 應該_存在workflow檔案_當匯出完成
 ```

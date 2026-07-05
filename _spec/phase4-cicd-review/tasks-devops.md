@@ -2,6 +2,8 @@
 
 > 每個任務設計為獨立可驗證，完成後有明確的檢查點。
 > ⬜ 待執行　✅ 已完成
+>
+> 執行方式：🤖 AI 執行（ADW 自動產出程式碼）　👤 手動執行（Console/CLI 操作）
 
 ## 前置閱讀
 
@@ -13,7 +15,7 @@
 
 ## Phase 0 — GitHub Actions CI 建置（~2h）
 
-### T01 — 建立 CI workflow 檔案 ⬜
+### T01 — 建立 CI workflow 檔案 ⬜　🤖 AI 執行
 
 在 `.github/workflows/ci.yml` 建立 GitHub Actions workflow，包含：
 - `test` job：`npm ci` + `npm run test`
@@ -28,7 +30,7 @@
 
 ---
 
-### T02 — 設定 npm scripts（lint） ⬜
+### T02 — 設定 npm scripts（lint） ⬜　🤖 AI 執行
 
 **依賴**：T01
 
@@ -41,7 +43,7 @@
 
 ---
 
-### T03 — 新增 build-docs job ⬜
+### T03 — 新增 build-docs job ⬜　🤖 AI 執行
 
 **依賴**：T01
 
@@ -57,7 +59,7 @@
 
 ---
 
-### T04 — 設定 GitHub Branch Protection ⬜
+### T04 — 設定 GitHub Branch Protection ⬜　👤 手動執行
 
 **依賴**：T01、T02
 
@@ -66,6 +68,8 @@
 - Require status checks：`test`、`lint`
 - Require branches to be up to date
 - Automatically delete head branches
+
+> 👤 手動原因：GitHub Console 操作，無法用程式碼表達，不適用 TDD 流程。
 
 **完成定義**：
 - 🟢 綠燈確認：直接 `git push origin main` 被拒絕，顯示 protected branch 錯誤（AC5）
@@ -76,8 +80,8 @@
 ## Notion 開票格式
 
 ```
-[DevOps] 建立 GitHub Actions CI workflow（test + lint）｜TDD: 應該_顯示綠燈_當測試全數通過
-[DevOps] 設定 package.json lint script｜TDD: 應該_型別檢查通過_當程式碼無型別錯誤
-[DevOps] 新增 build-docs job（僅 main branch）｜TDD: 應該_產出Hugo artifact_當merge進main
-[DevOps] 設定 GitHub Branch Protection Rules｜TDD: 應該_拒絕直接push_當目標為main
+[DevOps][AI] 建立 GitHub Actions CI workflow（test + lint）｜TDD: 應該_顯示綠燈_當測試全數通過
+[DevOps][AI] 設定 package.json lint script｜TDD: 應該_型別檢查通過_當程式碼無型別錯誤
+[DevOps][AI] 新增 build-docs job（僅 main branch）｜TDD: 應該_產出Hugo artifact_當merge進main
+[DevOps][手動] 設定 GitHub Branch Protection Rules｜TDD: 應該_拒絕直接push_當目標為main
 ```

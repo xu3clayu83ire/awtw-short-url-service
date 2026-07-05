@@ -2,6 +2,8 @@
 
 > 每個任務設計為獨立可驗證，完成後有明確的檢查點。
 > ⬜ 待執行　✅ 已完成
+>
+> 執行方式：🤖 AI 執行（ADW 自動產出程式碼）　👤 手動執行（Console/CLI 操作）
 
 ## 前置閱讀
 
@@ -19,7 +21,7 @@
 
 ## Phase 0 — Lambda 函式實作（~2h）
 
-### T01 — 實作 POST /api/shorten ⬜
+### T01 — 實作 POST /api/shorten ⬜　🤖 AI 執行
 
 在 `cdk/lambda/handler.ts` 實作短碼產生邏輯：
 - 驗證 URL 格式（必須以 http:// 或 https:// 開頭）
@@ -34,7 +36,7 @@
 
 ---
 
-### T02 — 實作 GET /{code} ⬜
+### T02 — 實作 GET /{code} ⬜　🤖 AI 執行
 
 **依賴**：T01
 
@@ -52,7 +54,7 @@
 
 ## Phase 1 — n8n 部署完成通知 Workflow（~1h）
 
-### T03 — 建立 n8n deploy-complete Webhook ⬜
+### T03 — 建立 n8n deploy-complete Webhook ⬜　🤖 AI 執行
 
 **依賴**：DevOps T05
 
@@ -69,7 +71,7 @@
 
 ---
 
-### T04 — 設定 Notion API Credential ⬜
+### T04 — 設定 Notion API Credential ⬜　👤 手動執行
 
 **依賴**：T03
 
@@ -80,17 +82,21 @@
 
 確認 Notion Integration 已加入「功能規格總表」資料庫的連結。
 
+> 👤 手動原因：API Token 等敏感設定需手動輸入至 n8n，不可寫入程式碼。
+
 **完成定義**：
 - 🟢 綠燈確認：n8n HTTP Request 測試 Notion API 回傳 200，`Deploy_URL` 欄位更新成功
 
 ---
 
-### T05 — 匯出 n8n Workflow JSON ⬜
+### T05 — 匯出 n8n Workflow JSON ⬜　👤 手動執行
 
 **依賴**：T03、T04
 
 將完成的 `deploy-complete` workflow 從 n8n 匯出為 JSON，存至：
 `n8n-workflows/deploy-complete.json`
+
+> 👤 手動原因：需從 n8n 介面手動匯出，再 commit 至 repo。
 
 **完成定義**：
 - 🟢 綠燈確認：`n8n-workflows/deploy-complete.json` 存在，commit 進 main branch
@@ -100,9 +106,9 @@
 ## Notion 開票格式
 
 ```
-[Backend] 實作 Lambda POST /api/shorten 短碼產生邏輯｜TDD: 應該_回傳短網址_當URL格式正確
-[Backend] 實作 Lambda GET /{code} 轉址邏輯｜TDD: 應該_回傳301轉址_當短碼存在
-[Backend] 建立 n8n deploy-complete webhook workflow｜TDD: 應該_回填Notion並發Email_當收到部署完成通知
-[Backend] 設定 n8n Notion API Credential｜TDD: 應該_更新Deploy_URL成功_當Credential設定正確
-[Backend] 匯出 deploy-complete workflow JSON｜TDD: 應該_存在workflow檔案_當匯出完成
+[Backend][AI] 實作 Lambda POST /api/shorten 短碼產生邏輯｜TDD: 應該_回傳短網址_當URL格式正確
+[Backend][AI] 實作 Lambda GET /{code} 轉址邏輯｜TDD: 應該_回傳301轉址_當短碼存在
+[Backend][AI] 建立 n8n deploy-complete webhook workflow｜TDD: 應該_回填Notion並發Email_當收到部署完成通知
+[Backend][手動] 設定 n8n Notion API Credential｜TDD: 應該_更新Deploy_URL成功_當Credential設定正確
+[Backend][手動] 匯出 deploy-complete workflow JSON｜TDD: 應該_存在workflow檔案_當匯出完成
 ```
