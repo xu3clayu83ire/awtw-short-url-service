@@ -71,7 +71,7 @@
 
 ---
 
-### T04 — 實作 PR 資訊解析 Code node ⬜　🤖 AI 執行　(ASUS-109)
+### T04 — 實作 PR 資訊解析 Code node ✅　🤖 AI 執行　(ASUS-109)
 
 **依賴**：T01
 
