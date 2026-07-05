@@ -15,7 +15,7 @@
 
 ## Phase 0 — GitHub Actions CI 建置（~2h）
 
-### T01 — 建立 CI workflow 檔案 ⬜　🤖 AI 執行　(ASUS-106)
+### T01 — 建立 CI workflow 檔案 ⬜　🤖 AI 執行
 
 在 `.github/workflows/ci.yml` 建立 GitHub Actions workflow，包含：
 - `test` job：`npm ci` + `npm run test`
