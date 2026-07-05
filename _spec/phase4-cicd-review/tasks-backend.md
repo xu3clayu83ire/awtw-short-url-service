@@ -22,7 +22,7 @@
 
 ## Phase 0 — n8n PR 通知 Workflow（~2h）
 
-### T01 — 建立 GitHub PR Webhook ⬜　👤 手動執行　(ASUS-101)
+### T01 — 建立 GitHub PR Webhook ✅　👤 手動執行　(ASUS-101)
 
 至 GitHub repo → Settings → Webhooks → Add webhook：
 - Payload URL：`https://<ngrok-url>/webhook/github-pr`
@@ -64,7 +64,7 @@
 - User：SA Gmail 帳號
 - Password：Gmail App Password（非登入密碼）
 
-> 👤 手動原因：帳號密碼等敏感設定需手動輸入至 n8n，不可寫入程式碼。
+> 👤 手動原因：帳號密碼等敏感設定需手動輸入��� n8n，不可寫入程式碼。
 
 **完成定義**：
 - 🟢 綠燈確認：n8n Send Email node 測試連線成功，收件匣出現測試信
