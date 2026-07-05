@@ -379,7 +379,7 @@
         "issueType": { "__rl": true, "value": "10003", "mode": "list", "cachedResultName": "任務" },
         "summary": "={{ $json.title }}",
         "additionalFields": {
-          "description": "=## 任務說明\n{{ $json.title }}\n\n## 完整任務內容\n{{ $json.body }}\n\n## 規格來源\n- Notion：{{ $json.notionPageUrl }}\n- Slug：{{ $json.slug }}\n- TaskId：{{ $json.slug }}#{{ $json.taskId }}\n- ExecMode：{{ $json.execMode }}"
+          "description": "=## 任務說明\n{{ $json.title }}\n\n## 完整任務內容\n{{ $json.body }}\n\n## 規格來源\n- Notion：{{ $json.notionPageUrl }}\n- Slug：{{ $json.slug }}\n- TaskId：{{ $json.slug }}#{{ $json.sourceFile }}#{{ $json.taskId }}\n- ExecMode：{{ $json.execMode }}"
         }
       },
       "type": "n8n-nodes-base.jira",
