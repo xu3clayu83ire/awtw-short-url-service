@@ -129,6 +129,20 @@
 - **意外副作用清理**：`feature/ASUS-102` 分支（從舊版 main 分岔、混進無關的 `src/store.ts`、測試結果不可信）已由使用者確認刪除 GitHub 上的分支與 PR，本地分支也已 `git branch -D` 清除
 - **取捨**：worktree 需要各自獨立 `npm install`（`node_modules` 不共用）；且 worktree 只解決「工作目錄被搶走」，如果工程師與 Agent Runner 同時改到同一個檔案，一樣會產生正常的 git 衝突，需要靠任務範圍不重疊來避免
 
+### [2026-07-05] TaskId 加上 sourceFile — 修正跨檔案同編號任務互相打架
+- **問題**：實測 ASUS-102（devops T01「建立 CI workflow 檔案」）時，`擷取任務區塊` 依序嘗試 `tasks-backend.md`／`tasks-devops.md`／`tasks-qa.md` 找第一個符合編號的 `T01`，但三個檔案的 `T01` 是各自獨立編號、內容完全不同的任務。結果永遠先抓到 `tasks-backend.md` 的 T01（「建立 GitHub PR Webhook」），Claude 用錯任務內容產生程式碼，回寫也標記錯檔案的任務為完成
+- **決定**：`TaskId` 格式從 `<slug>#<taskId>` 改成 `<slug>#<sourceFile>#<taskId>`，`asus-dev-workflow` 直接用票面明確指定的 `sourceFile` 讀取對應檔案，不再依序嘗試三份檔案用編號猜測；找不到合法 `sourceFile` 就直接拋錯中止，不可用猜測代替
+- **驗證**：用模擬 payload 測試正確解析出 `sourceFile: tasks-devops.md`；用新格式重開票（ASUS-106）後完整跑通全部 28 個節點，`.github/workflows/ci.yml`／`test/ci-workflow.test.ts`／`tasks-devops.md` 三個檔案正確對應
+- **異動範圍**：`n8n-workflows/asus-notion-to-jira-hugo.json`（T13 description 樣板 TaskId 格式）、`n8n-workflows/asus-dev-workflow.json`（解析票面、擷取任務區塊節點）
+
+### [2026-07-05] additional_dependencies 自動安裝 + 紅綠燈環境錯誤偵測
+- **問題**：ASUS-106 實測「完整跑通」後，人工檢查 PR 內容才發現測試檔 `import` 了 `js-yaml`，但這個套件根本沒裝在 `package.json` 裡，`npm run test` 實際上是因為模組載入失敗而報錯，不是真正的紅燈/綠燈。既有的紅燈確認邏輯只看 `exitCode !== 0`，沒辦法分辨「測試斷言正確失敗」跟「環境缺套件、測試根本跑不起來」，把後者誤判成有效紅燈；綠燈階段甚至**完全沒有**成功與否的判斷閘門，不管測試結果如何都直接 commit
+- **決定**：(1) `組裝 Prompt` 讀出目前 `package.json` 的依賴清單告知 Claude，優先使用既有依賴；若任務真的需要新套件，回應新增 `additional_dependencies` 欄位列出，`asus-dev-workflow` 在寫入測試檔前自動 `npm install`；(2) 紅燈與綠燈確認前都新增「環境錯誤偵測」節點，比對 `Cannot find module`／`Failed to load url`／`SyntaxError` 等樣式，命中就直接中止並丟出明確錯誤，不當作有效的紅/綠燈；(3) 補上原本完全缺失的「綠燈確認」IF 閘門，測試沒有真的通過（`exitCode !== 0`）就中止，不再不管三七二十一直接 commit
+- **理由**：這類「假紅燈/假綠燈」問題已經是這個 session 第三次用不同面貌出現（`package.json` 不存在、`js-yaml` 沒裝），代表光靠「有沒有 exitCode」判斷 TDD 燈號本質上不夠，需要從「輸出內容是否包含環境錯誤特徵」跟「是否真的執行到測試判斷式」兩個角度補強
+- **驗證**：用模擬 stdout/stderr 測試環境錯誤偵測邏輯，正確攔截 `Failed to load url` 並丟出錯誤，正常測試失敗訊息則正常放行
+- **異動範圍**：`n8n-workflows/asus-dev-workflow.json` 新增 5 個節點（讀取 package.json、Guard IF - Has Additional Deps、npm install 額外依賴、檢查環境錯誤×2、綠燈確認 IF），已 push 上 `origin/main`
+- **後續待辦**：PR #4（ASUS-106）本身仍然是用修正前的版本產生的，`js-yaml` 沒裝、測試實際上跑不起來，**不建議直接合併**；應該關閉此 PR、刪除分支，讓 ASUS-106 用修正後的邏輯重新跑一次，才能驗證這次的修正是否徹底解決問題
+
 ---
 
 ## API 設計決策
