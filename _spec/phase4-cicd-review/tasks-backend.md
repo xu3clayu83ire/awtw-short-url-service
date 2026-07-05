@@ -22,7 +22,7 @@
 
 ## Phase 0 — n8n PR 通知 Workflow（~2h）
 
-### T01 — 建立 GitHub PR Webhook ⬜　👤 手動執行　(ASUS-101)
+### T01 — 建立 GitHub PR Webhook ✅　👤 手動執行　(ASUS-101)
 
 至 GitHub repo → Settings → Webhooks → Add webhook：
 - Payload URL：`https://<ngrok-url>/webhook/github-pr`
