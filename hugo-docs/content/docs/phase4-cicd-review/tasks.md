@@ -44,7 +44,7 @@ weight: 4
 
 ---
 
-### T02 — 建立 n8n PR 通知 Workflow ⬜　🤖 AI 執行
+### T02 — 建立 n8n PR 通知 Workflow ⬜　🤖 AI 執行　(ASUS-108)
 
 **依賴**：T01
 
@@ -78,7 +78,7 @@ weight: 4
 
 ---
 
-### T04 — 實作 PR 資訊解析 Code node ⬜　🤖 AI 執行
+### T04 — 實作 PR 資訊解析 Code node ⬜　🤖 AI 執行　(ASUS-109)
 
 **依賴**：T01
 
@@ -155,7 +155,7 @@ return [{
 
 ## Phase 0 — GitHub Actions CI 建置（~2h）
 
-### T01 — 建立 CI workflow 檔案 ⬜　🤖 AI 執行　(ASUS-102)
+### T01 — 建立 CI workflow 檔案 ✅　🤖 AI 執行　(ASUS-107)
 
 在 `.github/workflows/ci.yml` 建立 GitHub Actions workflow，包含：
 - `test` job：`npm ci` + `npm run test`
@@ -170,7 +170,7 @@ return [{
 
 ---
 
-### T02 — 設定 npm scripts（lint） ⬜　🤖 AI 執行
+### T02 — 設定 npm scripts（lint） ⬜　🤖 AI 執行　(ASUS-110)
 
 **依賴**：T01
 
@@ -183,7 +183,7 @@ return [{
 
 ---
 
-### T03 — 新增 build-docs job ⬜　🤖 AI 執行
+### T03 — 新增 build-docs job ⬜　🤖 AI 執行　(ASUS-111)
 
 **依賴**：T01
 

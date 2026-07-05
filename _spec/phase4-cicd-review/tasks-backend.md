@@ -37,7 +37,7 @@
 
 ---
 
-### T02 — 建立 n8n PR 通知 Workflow ⬜　🤖 AI 執行
+### T02 — 建立 n8n PR 通知 Workflow ⬜　🤖 AI 執行　(ASUS-108)
 
 **依賴**：T01
 
@@ -71,7 +71,7 @@
 
 ---
 
-### T04 — 實作 PR 資訊解析 Code node ⬜　🤖 AI 執行
+### T04 — 實作 PR 資訊解析 Code node ⬜　🤖 AI 執行　(ASUS-109)
 
 **依賴**：T01
 
