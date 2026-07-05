@@ -151,7 +151,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nreturn [{\n  json: {\n    ...item,\n    claudeBody: JSON.stringify({\n      model: 'claude-sonnet-4-6',\n      max_tokens: 4096,\n      system: item.systemPrompt,\n      messages: [{ role: 'user', content: item.userPrompt }]\n    })\n  }\n}];"
+        "jsCode": "const item = $input.first().json;\nreturn [{\n  json: {\n    ...item,\n    claudeBody: JSON.stringify({\n      model: 'claude-sonnet-4-6',\n      max_tokens: 8192,\n      system: item.systemPrompt,\n      messages: [{ role: 'user', content: item.userPrompt }]\n    })\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -203,7 +203,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst rawText = response.content?.[0]?.text ?? '';\n\nconst jsonMatch = rawText.match(/\\{[\\s\\S]*\\}/);\nif (!jsonMatch) {\n  throw new Error('Claude 回應無法解析為 JSON：' + rawText.substring(0, 200));\n}\n\nconst parsed = JSON.parse(jsonMatch[0]);\nconst required = ['test_file_path', 'test_file_content', 'impl_file_path', 'impl_file_content', 'commit_message'];\nconst missing = required.filter(k => !parsed[k]);\n\nif (missing.length > 0) {\n  throw new Error(`Claude 回應缺少必要欄位：${missing.join(', ')}`);\n}\n\nconst prev = $('準備 Claude Body').first().json;\nreturn [{\n  json: {\n    ...parsed,\n    jiraKey: prev.jiraKey,\n    jiraUrl: prev.jiraUrl,\n    issueId: prev.issueId,\n    summary: prev.summary,\n    slug: prev.slug,\n    taskId: prev.taskId,\n    sourceFile: prev.sourceFile,\n  }\n}];"
+        "jsCode": "const response = $input.first().json;\nconst rawText = response.content?.[0]?.text ?? '';\n\nif (response.stop_reason === 'max_tokens') {\n  throw new Error('Claude 回應被 max_tokens 截斷，尚未產出完整 JSON。請提高 準備 Claude Body 節點的 max_tokens 設定。回應片段：' + rawText.slice(-300));\n}\n\nconst jsonMatch = rawText.match(/\\{[\\s\\S]*\\}/);\nif (!jsonMatch) {\n  throw new Error('Claude 回應無法解析為 JSON：' + rawText.substring(0, 200));\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonMatch[0]);\n} catch (e) {\n  throw new Error('Claude 回應 JSON 解析失敗（可能被截斷或格式錯誤）：' + e.message + ' | 回應結尾：' + rawText.slice(-300));\n}\nconst required = ['test_file_path', 'test_file_content', 'impl_file_path', 'impl_file_content', 'commit_message'];\nconst missing = required.filter(k => !parsed[k]);\n\nif (missing.length > 0) {\n  throw new Error(`Claude 回應缺少必要欄位：${missing.join(', ')}`);\n}\n\nconst prev = $('準備 Claude Body').first().json;\nreturn [{\n  json: {\n    ...parsed,\n    jiraKey: prev.jiraKey,\n    jiraUrl: prev.jiraUrl,\n    issueId: prev.issueId,\n    summary: prev.summary,\n    slug: prev.slug,\n    taskId: prev.taskId,\n    sourceFile: prev.sourceFile,\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
