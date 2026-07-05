@@ -30,7 +30,7 @@
 
 ---
 
-### T02 — 設定 npm scripts（lint） ⬜　🤖 AI 執行　(ASUS-110)
+### T02 — 設定 npm scripts（lint） ✅　🤖 AI 執行　(ASUS-110)
 
 **依賴**：T01
 
