@@ -143,6 +143,31 @@
 - **異動範圍**：`n8n-workflows/asus-dev-workflow.json` 新增 5 個節點（讀取 package.json、Guard IF - Has Additional Deps、npm install 額外依賴、檢查環境錯誤×2、綠燈確認 IF），已 push 上 `origin/main`
 - **後續待辦**：PR #4（ASUS-106）本身仍然是用修正前的版本產生的，`js-yaml` 沒裝、測試實際上跑不起來，**不建議直接合併**；應該關閉此 PR、刪除分支，讓 ASUS-106 用修正後的邏輯重新跑一次，才能驗證這次的修正是否徹底解決問題
 
+### [2026-07-05] impl_file_path 缺失時從測試檔 import 自動推斷
+- **問題**：Claude 回應偶爾會缺少 `impl_file_path` 欄位（`impl_file_content` 正常齊全），導致「解析回應」節點直接判定為缺欄位錯誤中止，即使 Claude 產出的程式碼內容本身完全正確可用
+- **決定**：新增 fallback——`impl_file_path` 缺失時，改從 `test_file_content` 裡的相對路徑 `import ... from '../...'` 陳述式反推出實作檔路徑；只有連這個推斷都失敗，才真正拋錯中止
+- **異動範圍**：`n8n-workflows/asus-dev-workflow.json`（`解析回應` 節點）
+
+### [2026-07-05] 修正環境錯誤偵測誤判正常 TDD 紅燈
+- **問題**：ASUS-107 實測發現「Failed to load url ../src/xxx」這個訊息在紅燈階段其實是正常現象（實作檔案本來就還沒寫），但上一版（見「additional_dependencies 自動安裝＋紅綠燈環境錯誤偵測」條目）的偵測邏輯無條件把這個樣式當成環境錯誤，導致正常的 TDD 紅燈被誤判、流程被錯誤中止
+- **決定**：改成判斷「找不到的是 npm 套件名稱、還是本地相對路徑」——本地相對路徑找不到＝正常 TDD 現象（實作檔還沒寫），套件名稱（不含 `./` 或 `../` 開頭）找不到才是真正的環境錯誤（缺少 npm 套件），用 `isLocalPath()` helper 判斷
+- **異動範圍**：`n8n-workflows/asus-dev-workflow.json`（`檢查環境錯誤（紅燈）`／`檢查環境錯誤（綠燈）` 節點）
+
+### [2026-07-05] impl_file_path 必須是任務實際交付檔案，不可包一層驗證模組
+- **問題**：ASUS-107 連續兩次實測都出現同樣的系統性偏誤——Claude 把 `impl_file_path` 寫成另包一層驗證用的 TypeScript 模組（如 `src/ci-workflow-validator.ts`），卻沒有真正產出任務要求的交付檔案本身（`.github/workflows/ci.yml`），導致測試因為真正該有的檔案不存在而全數失敗
+- **決定**：在 System Prompt 明確規定：任務要求的是設定檔（或其他非 TS 檔案）就直接把該檔案路徑當 `impl_file_path`，不要包一層驗證模組
+- **驗證**：修正後下一次重試（ASUS-107）即完全成功，PR #5 經 GitHub compare API 確認乾淨（4 檔案／2 commit，內容與任務範圍完全吻合）——確認這是可重現、可用明確指令根治的系統性偏誤，不是隨機失誤
+- **異動範圍**：`n8n-workflows/asus-dev-workflow.json`（System Prompt）
+
+### [2026-07-05] asus-dev-workflow 改用獨立 worktree，與排程同步 workflow 徹底隔離
+- **問題**：`asus-dev-workflow`（Jira 觸發）與 `asus-notion-to-jira-hugo`（排程同步）先前共用同一個 worktree `awtw-short-url-service-agent`。ASUS-107 成功跑完後人工審查 PR 內容，發現 PR 裡混進一個不該出現的 `hugo-docs/.../tasks.md` 變更——排程同步剛好在 `asus-dev-workflow` 把 worktree checkout 到 `feature/ASUS-107` 期間執行，把 Hugo 文件同步結果寫並提交到了這個 feature 分支上，而不是 main。這是「Agent Runner 獨立工作目錄」那次修復解決了工程師與 Agent Runner 互搶目錄的問題後，殘留的第二層同款問題——這次是兩個自動化 workflow 互搶
+- **後續發現**：排查時進一步發現這個 race 曾經造成真正的資料遺失風險：排程同步把 ASUS-108/109/110/111 四張票的回填票號寫進了當時被切到 `feature/ASUS-107` 的共用 worktree，且從未提交，長期停留在 working tree 的未追蹤變更裡，若沒有排查極可能在下一次 `git checkout` 時被靜默覆蓋遺失。已人工核對後救回，正確寫回 `_spec/phase4-cicd-review/tasks-backend.md`（T02→ASUS-108、T04→ASUS-109）與 `tasks-devops.md`（T02→ASUS-110、T03→ASUS-111）
+- **決定**：新增第三個 worktree `awtw-short-url-service-devrun`，`asus-dev-workflow` 的所有本地檔案路徑與 git 指令 cwd 全部改指向這裡；`asus-notion-to-jira-hugo` 維持指向原本的 `awtw-short-url-service-agent`，兩者互不重疊
+- **理由**：與先前「Agent Runner 獨立工作目錄」決策同樣的邏輯——只要兩個自動化流程共用一個可以被 `git checkout` 切換分支的工作目錄，就永遠有機率互相干擾；worktree 之間共用同一份 `.git` 物件庫與歷史，隔離工作目錄的成本很低
+- **驗證**：透過 n8n API 讀回兩個 workflow 目前的節點內容，確認 `asus-dev-workflow` 只含 `awtw-short-url-service-devrun` 字樣、`asus-notion-to-jira-hugo` 只含 `awtw-short-url-service-agent` 字樣，兩者完全不重疊
+- **異動範圍**：`n8n-workflows/asus-dev-workflow.json`（10 處路徑），已透過 n8n API push 生效並 commit 進 git（main）
+- **殘留風險（未處理）**：若同一個 `asus-dev-workflow` 因兩張 Jira 票幾乎同時轉為 In Progress 而被觸發兩次，仍會在 `awtw-short-url-service-devrun` 這個 worktree 內互踩（同一個 worktree 同時間只能在一個分支上）。範圍較小，暫不處理，之後若真的遇到再考慮用 n8n workflow concurrency 設定或檔案鎖序列化
+
 ---
 
 ## API 設計決策
