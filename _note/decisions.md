@@ -168,6 +168,13 @@
 - **異動範圍**：`n8n-workflows/asus-dev-workflow.json`（10 處路徑），已透過 n8n API push 生效並 commit 進 git（main）
 - **殘留風險（未處理）**：若同一個 `asus-dev-workflow` 因兩張 Jira 票幾乎同時轉為 In Progress 而被觸發兩次，仍會在 `awtw-short-url-service-devrun` 這個 worktree 內互踩（同一個 worktree 同時間只能在一個分支上）。範圍較小，暫不處理，之後若真的遇到再考慮用 n8n workflow concurrency 設定或檔案鎖序列化
 
+### [2026-07-05] 修正 Agent Runner HTTP body 逐 chunk 解碼造成的多位元組字元損毀
+- **問題**：PR #5 merge 進 main 後，人工核對發現 `_spec/phase4-cicd-review/tasks-devops.md` 裡「尚未出現」的「尚」字被替換成 `�`（U+FFFD）。追查到根因在 `agent-runner/server.js` 的 `parseBody`：`req.on('data', chunk => (body += chunk))` 對每個到達的 Buffer chunk 個別呼叫 `toString()`（預設 utf8）後才字串相加；若一個多位元組字元（中文在 UTF-8 是 3 bytes）的位元組序列剛好被切在兩個 HTTP chunk 邊界中間，各自獨立解碼那一半的位元組就會產生無效序列、被替換成 `�`，且這個過程是不可逆的（字串相加當下就已經遺失原始位元組資訊，之後 `JSON.parse` 對此完全沒有察覺，寫檔案時只是忠實寫入已損毀的字串）
+- **決定**：`parseBody` 改成先把所有到達的 chunk 以 Buffer 形式收集進陣列，在 `end` 事件才用 `Buffer.concat(chunks).toString('utf8')` 一次性解碼，避免跨 chunk 邊界切斷多位元組字元
+- **驗證**：重啟 Agent Runner 後，寫入一段刻意涵蓋 Node 預設 64KB chunk 邊界（padding 長度 65480～65540 逐一掃描）、結尾為中文字串的內容，透過 `/write-file` → `/read-file` round-trip 全部通過，未再出現任何替換字元
+- **異動範圍**：`agent-runner/server.js`（三個 worktree 各自的複本都已同步更新，需手動重啟正在跑的 Node process 才會套用，git pull 不會讓已啟動的 process 拿到新程式碼）
+- **取捨**：這個 bug 屬於機率性重現（只有中文字元位元組剛好落在 chunk 邊界才會觸發），過去測試沒抓到不代表沒發生過，只是剛好之前的檔案內容或 payload 大小沒有踩中邊界；建議往後若又看到任務檔內容出現不明亂碼，優先懷疑是不是又有類似「串流資料逐段處理但用字串而非 Buffer 累積」的地方沒改到（例如 `/run` 端點的 `exec` callback 本身用的是 Node 內建 buffering，不受影響，但若未來新增其他串流讀寫端點要留意同樣的陷阱）
+
 ---
 
 ## API 設計決策
