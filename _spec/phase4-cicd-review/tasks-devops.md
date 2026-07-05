@@ -24,7 +24,7 @@
 
 **完成定義**：
 - 測試命名：`應該_顯示綠燈_當測試全數通過`
-- 🔴 紅燈確認：push feature branch，GitHub Actions ���未出現（無 workflow 檔）
+- 🔴 紅燈確認：push feature branch，GitHub Actions 尚未出現（無 workflow 檔）
 - 🟢 綠燈確認：push 後 Actions tab 出現執行記錄，test + lint 兩個 job 均顯示 ✅
 - 執行指令：`git push origin feature/test-ci` 後至 GitHub repo → Actions 頁面確認
 
