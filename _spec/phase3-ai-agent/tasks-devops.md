@@ -67,7 +67,7 @@ node server.js
 
 ---
 
-### T02 — 初始化 TypeScript + Vitest 專案 ⬜
+### T02 — 初始化 TypeScript + Vitest 專案 ✅
 
 **依賴**：T01
 
