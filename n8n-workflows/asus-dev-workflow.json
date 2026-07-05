@@ -247,6 +247,31 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            { "id": "checkout-ok", "leftValue": "={{ $json.exitCode }}", "rightValue": 0, "operator": { "type": "number", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2304, 160],
+      "id": "c0000001-2222-4bbb-9001-000000000001",
+      "name": "Guard IF - Checkout 成功"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2480, 320],
+      "id": "c0000002-2222-4bbb-9002-000000000002",
+      "name": "中止（Checkout 失敗，Jira 保持 In Progress）"
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "http://host.docker.internal:3001/write-file",
         "sendBody": true,
@@ -696,10 +721,20 @@
       "main": [
         [
           {
-            "node": "寫入測試",
+            "node": "Guard IF - Checkout 成功",
             "type": "main",
             "index": 0
           }
+        ]
+      ]
+    },
+    "Guard IF - Checkout 成功": {
+      "main": [
+        [
+          { "node": "寫入測試", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "中止（Checkout 失敗，Jira 保持 In Progress）", "type": "main", "index": 0 }
         ]
       ]
     },
