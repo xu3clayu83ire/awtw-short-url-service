@@ -10,7 +10,7 @@
         112
       ],
       "id": "cecf476d-722e-443a-99eb-77f9140e22e8",
-      "name": "No Operation, do nothing"
+      "name": "T04a Skip - Jira Key Already Set"
     },
     {
       "parameters": {},
@@ -21,7 +21,7 @@
         -144
       ],
       "id": "155fc2f3-6960-4c0e-88bc-eeafd88dbdcc",
-      "name": "No Operation, do nothing1"
+      "name": "T05a Skip - No Tasks To Open"
     },
     {
       "parameters": {
@@ -55,7 +55,7 @@
         16
       ],
       "id": "03eb9de2-92ce-407e-aa95-0be5a7f5ad5f",
-      "name": " T01 IF"
+      "name": "T04 Guard IF - Jira Key Empty"
     },
     {
       "parameters": {
@@ -89,7 +89,7 @@
         -240
       ],
       "id": "34c2c990-c1b8-46f9-a4dd-1f4781c7849d",
-      "name": " T02 IF"
+      "name": "T05 Guard IF - Has Tasks To Open"
     },
     {
       "parameters": {
@@ -107,7 +107,7 @@
         },
         "summary": "={{ $json.title }}",
         "additionalFields": {
-          "description": "=## 任務說明\n{{ $json.title }}\n\n## TDD 完成定義 (DoD)\n- [ ] 測試命名：`{{ $json.tdd }}`\n- [ ] 🔴 紅燈：測試必須先 Fail\n- [ ] 🟢 綠燈：實作後測試 Pass，覆蓋率 100%\n- [ ] 🔵 藍燈：重構完成，git commit 已執行\n\n## 規格來源\n- Notion：{{ $json.notionPageUrl }}\n- Spec：{{ $json.specUrl }}"
+          "description": "=## 任務說明\n{{ $json.title }}\n\n## TDD 完成定義 (DoD)\n- [ ] 測試命名：`{{ $json.tdd }}`\n- [ ] 🔴 紅燈：測試必須先 Fail\n- [ ] 🟢 綠燈：實作後測試 Pass，覆蓋率 100%\n- [ ] 🔵 藍燈：重構完成，git commit 已執行\n\n## 規格來源\n- Notion：{{ $json.notionPageUrl }}\n- Slug：{{ $json.slug }}"
         }
       },
       "type": "n8n-nodes-base.jira",
@@ -117,7 +117,7 @@
         -320
       ],
       "id": "720cbad5-baea-45e9-8a49-46300735ecd0",
-      "name": "T04 Jira Create an issue",
+      "name": "T09 Jira Create Issue",
       "credentials": {
         "jiraSoftwareCloudApi": {
           "id": "uPfqJ1jXZhdrMiJz",
@@ -159,7 +159,7 @@
         -320
       ],
       "id": "bc9168f1-ac38-459a-bdcd-0f8e5129c15e",
-      "name": "T05 Update Notion",
+      "name": "T11 Update Notion Jira Key",
       "credentials": {
         "notionApi": {
           "id": "yqbs6rdfnHAnUZoM",
@@ -178,11 +178,11 @@
         -512
       ],
       "id": "c391c1c9-79bb-4f3e-b945-6d87bcb7bb7d",
-      "name": "T06 Hugo Front Matter"
+      "name": "T07 Build Hugo Front Matter"
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst raw = item.Tasks_To_Open ?? '';\nconst lines = raw.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\n\nreturn lines.map(line => {\n  const [left, right] = line.split('｜TDD:');\n  const roleMatch = left ? left.match(/^\\[(.+?)\\]/) : null;\n  return {\n    json: {\n      role: roleMatch ? roleMatch[1] : 'Backend',\n      title: left ? left.replace(/^\\[.+?\\]\\s*/, '').trim() : '',\n      tdd: right ? right.trim() : '',\n      notionPageId: item.id ?? '',\n      notionPageUrl: '',\n      specUrl: item.Spec_URL ?? '',\n      slug: item.Slug ?? '',\n    }\n  };\n});"
+        "jsCode": "const item = $input.first().json;\nconst raw = item.Tasks_To_Open ?? '';\nconst lines = raw.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\n\nreturn lines.map(line => {\n  const [left, right] = line.split('｜TDD:');\n  const roleMatch = left ? left.match(/^\\[(.+?)\\]/) : null;\n  return {\n    json: {\n      role: roleMatch ? roleMatch[1] : 'Backend',\n      title: left ? left.replace(/^\\[.+?\\]\\s*/, '').trim() : '',\n      tdd: right ? right.trim() : '',\n      notionPageId: item.id ?? '',\n      notionPageUrl: '',\n      slug: item.Slug ?? '',\n    }\n  };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -191,11 +191,11 @@
         -320
       ],
       "id": "cc59862d-121f-472e-ae76-52bdacc0db9c",
-      "name": "T03 Cut Task "
+      "name": "T06 Cut Task Lines"
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst allKeys = items.map(item => item.json.key).join(', ');\nconst notionPageId = $('T03 Cut Task ').first().json.notionPageId;\n\nreturn [{ json: { allKeys, notionPageId } }];"
+        "jsCode": "const items = $input.all();\nconst allKeys = items.map(item => item.json.key).join(', ');\nconst notionPageId = $('T06 Cut Task Lines').first().json.notionPageId;\n\nreturn [{ json: { allKeys, notionPageId } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -204,7 +204,7 @@
         -320
       ],
       "id": "952e1560-c21c-447b-b37c-23773dfe6609",
-      "name": "T08 Combine Jira Key"
+      "name": "T10 Combine Jira Keys"
     },
     {
       "parameters": {
@@ -217,7 +217,7 @@
         -512
       ],
       "id": "80b44b26-181c-4a2d-a1b0-050e308799fc",
-      "name": "T07 Hugo docs"
+      "name": "T08 Write Hugo Docs File"
     },
     {
       "parameters": {
@@ -237,7 +237,7 @@
         16
       ],
       "id": "bd189c58-187e-49fe-85e4-67b6ced34fc8",
-      "name": "Schedule Trigger"
+      "name": "T00 Schedule Trigger"
     },
     {
       "parameters": {
@@ -258,7 +258,7 @@
             {
               "key": "Status|status",
               "condition": "equals",
-              "statusValue": "Read to Plan"
+              "statusValue": "Ready to Plan"
             },
             {
               "key": "Jira_Epic_Key|rich_text",
@@ -275,7 +275,7 @@
         16
       ],
       "id": "bb9f479b-e433-4d5e-bf1d-20b15e0aa5c0",
-      "name": "Notion Get many",
+      "name": "T01 Notion Query Ready Phases",
       "credentials": {
         "notionApi": {
           "id": "yqbs6rdfnHAnUZoM",
@@ -285,7 +285,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nreturn items.map(item => ({\n  json: {\n    id: item.json.id,\n    Name: item.json.name,\n    Slug: item.json.property_slug,\n    Weight: item.json.property_weight,\n    Tasks_To_Open: item.json.property_tasks_to_open,\n    Jira_Epic_Key: item.json.property_jira_epic_key,\n    Spec_URL: item.json.property_spec_url,\n    url: item.json.url,\n  }\n}));"
+        "jsCode": "const items = $input.all();\nreturn items.map(item => ({\n  json: {\n    id: item.json.id,\n    Name: item.json.name,\n    Slug: item.json.property_slug,\n    Weight: item.json.property_weight,\n    Tasks_To_Open: item.json.property_tasks_to_open,\n    Jira_Epic_Key: item.json.property_jira_epic_key,\n    Spec_URL: item.json.property_spec_url,\n    // 前置 phase 依賴檢查用欄位｜實際輸出鍵名須在 n8n 執行一次後於 T01 Notion Query Ready Phases 節點輸出確認，中文屬性名稱經 n8n 轉換的鍵名不保證與英文屬性一致\n    HasPrevPhase: Array.isArray(item.json['property_前置phase']) && item.json['property_前置phase'].length > 0,\n    PrevJiraEpicKey: item.json['property_前置jira_epic_key'],\n    url: item.json.url,\n  }\n}));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -294,123 +294,195 @@
         16
       ],
       "id": "11f63ec6-dc93-463a-b70c-42a51413374b",
-      "name": "Code in JavaScript"
+      "name": "T02 Parse Notion Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "no-prev-phase",
+              "leftValue": "={{ $json.HasPrevPhase }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "prev-jira-key-filled",
+              "leftValue": "={{ $json.PrevJiraEpicKey ? $json.PrevJiraEpicKey.length : 0 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        560,
+        16
+      ],
+      "id": "b7f6e2b1-3a4c-4d5e-9f6a-1a2b3c4d5e6f",
+      "name": "T03 Guard IF - Prev Phase Done"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        656,
+        160
+      ],
+      "id": "d4e5f6a7-8b9c-4d0e-1f2a-3b4c5d6e7f8a",
+      "name": "T03a Skip - Prev Phase Not Ready"
     }
   ],
   "pinData": {},
   "connections": {
-    " T01 IF": {
+    "T04 Guard IF - Jira Key Empty": {
       "main": [
         [
           {
-            "node": " T02 IF",
+            "node": "T05 Guard IF - Has Tasks To Open",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "No Operation, do nothing",
+            "node": "T04a Skip - Jira Key Already Set",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    " T02 IF": {
+    "T05 Guard IF - Has Tasks To Open": {
       "main": [
         [
           {
-            "node": "T03 Cut Task ",
+            "node": "T06 Cut Task Lines",
             "type": "main",
             "index": 0
           },
           {
-            "node": "T06 Hugo Front Matter",
+            "node": "T07 Build Hugo Front Matter",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "No Operation, do nothing1",
+            "node": "T05a Skip - No Tasks To Open",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "T04 Jira Create an issue": {
+    "T09 Jira Create Issue": {
       "main": [
         [
           {
-            "node": "T08 Combine Jira Key",
+            "node": "T10 Combine Jira Keys",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "T06 Hugo Front Matter": {
+    "T07 Build Hugo Front Matter": {
       "main": [
         [
           {
-            "node": "T07 Hugo docs",
+            "node": "T08 Write Hugo Docs File",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "T03 Cut Task ": {
+    "T06 Cut Task Lines": {
       "main": [
         [
           {
-            "node": "T04 Jira Create an issue",
+            "node": "T09 Jira Create Issue",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "T08 Combine Jira Key": {
+    "T10 Combine Jira Keys": {
       "main": [
         [
           {
-            "node": "T05 Update Notion",
+            "node": "T11 Update Notion Jira Key",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Schedule Trigger": {
+    "T00 Schedule Trigger": {
       "main": [
         [
           {
-            "node": "Notion Get many",
+            "node": "T01 Notion Query Ready Phases",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Notion Get many": {
+    "T01 Notion Query Ready Phases": {
       "main": [
         [
           {
-            "node": "Code in JavaScript",
+            "node": "T02 Parse Notion Fields",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Code in JavaScript": {
+    "T02 Parse Notion Fields": {
       "main": [
         [
           {
-            "node": " T01 IF",
+            "node": "T03 Guard IF - Prev Phase Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "T03 Guard IF - Prev Phase Done": {
+      "main": [
+        [
+          {
+            "node": "T04 Guard IF - Jira Key Empty",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "T03a Skip - Prev Phase Not Ready",
             "type": "main",
             "index": 0
           }

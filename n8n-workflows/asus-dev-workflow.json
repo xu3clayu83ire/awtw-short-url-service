@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload = $input.first().json.body ?? $input.first().json;\nconst issue = payload.issue ?? {};\nconst fields = issue.fields ?? {};\n\nconst status = fields.status?.name ?? '';\nif (status !== 'In Progress') {\n  return [];\n}\n\nconst summary = fields.summary ?? '';\n\n// 手動票略過，不觸發 Claude API\nif (summary.includes('[手動]')) {\n  return [];\n}\n\nconst descText = JSON.stringify(fields.description ?? '');\nconst tddMatch = descText.match(/測試命名[：:]\\s*`?([^`\\n\"]+)`?/);\nconst tddDod = tddMatch ? tddMatch[1].trim() : '';\n\nconst slugMatch = descText.match(/Spec[：:][^\\n]*?\\/([^\\/\\s\"]+)\\.md/);\nconst slug = slugMatch ? slugMatch[1] : '';\n\nreturn [{\n  json: {\n    jiraKey: issue.key ?? '',\n    summary,\n    tddDod,\n    slug,\n    jiraUrl: `https://prostyliu.atlassian.net/browse/${issue.key}`,\n    issueId: issue.id ?? '',\n  }\n}];"
+        "jsCode": "const payload = $input.first().json.body ?? $input.first().json;\nconst issue = payload.issue ?? {};\nconst fields = issue.fields ?? {};\n\nconst status = fields.status?.name ?? '';\nif (status !== 'In Progress') {\n  return [];\n}\n\nconst summary = fields.summary ?? '';\n\n// 手動票略過，不觸發 Claude API\nif (summary.includes('[手動]')) {\n  return [];\n}\n\nconst descText = JSON.stringify(fields.description ?? '');\nconst tddMatch = descText.match(/測試命名[：:]\\s*`?([^`\\n\"]+)`?/);\nconst tddDod = tddMatch ? tddMatch[1].trim() : '';\n\nconst slugMatch = descText.match(/Slug[：:]\\s*([^\\s\"\\\\]+)/);\nconst slug = slugMatch ? slugMatch[1] : '';\n\nreturn [{\n  json: {\n    jiraKey: issue.key ?? '',\n    summary,\n    tddDod,\n    slug,\n    jiraUrl: `https://prostyliu.atlassian.net/browse/${issue.key}`,\n    issueId: issue.id ?? '',\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -36,7 +36,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{\n  \"filePath\": \"D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\phase3-ai-agent\\\\spec.md\"\n}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\spec.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -54,7 +54,7 @@
         "url": "http://host.docker.internal:3001/read-file",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{\n  \"filePath\": \"D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\phase3-ai-agent\\\\design.md\"\n}",
+        "jsonBody": "={{ JSON.stringify({ filePath: 'D:\\\\06_Workspace\\\\Workspace_GitHub\\\\xu3clayu83ire\\\\alag-addyosmani-demos\\\\awtw-short-url-service\\\\_spec\\\\' + $('解析票面').first().json.slug + '\\\\design.md' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
