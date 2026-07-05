@@ -43,7 +43,7 @@
 
 ---
 
-### T03 — 新增 build-docs job ⬜　🤖 AI 執行　(ASUS-111)
+### T03 — 新增 build-docs job ✅　🤖 AI 執行　(ASUS-111)
 
 **依賴**：T01
 
