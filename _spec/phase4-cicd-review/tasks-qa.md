@@ -21,9 +21,9 @@
 
 | AC | 情境 | 步驟 | 預期結果 | 實際結果 | Pass/Fail |
 |----|------|------|---------|---------|-----------|
-| AC1 | CI 自動觸發 | 1. 建立 feature branch<br>2. push 至 GitHub | GitHub repo → Actions tab 出現新執行記錄，test + lint job 啟動 | | ⬜ |
-| AC2 | CI test 通過 | 1. AC1 完成<br>2. 等待 CI 執行完成 | test job 顯示綠燈 ✅，PR 頁面 checks 通過 | | ⬜ |
-| AC3 | CI lint 通過 | 1. AC1 完成<br>2. 等待 CI 執行完成 | lint job 顯示綠燈 ✅，PR 頁面 checks 通過 | | ⬜ |
+| AC1 | CI 自動觸發 | 1. 建立 feature branch<br>2. push 至 GitHub | GitHub repo → Actions tab 出現新執行記錄，test + lint job 啟動 | 每個 PR push 都正確觸發，Actions 頁面確認 | ✅ |
+| AC2 | CI test 通過 | 1. AC1 完成<br>2. 等待 CI 執行完成 | test job 顯示綠燈 ✅，PR 頁面 checks 通過 | PR #14 修正 rollup lockfile 平台 bug 後，main 上最新一次執行 test job 綠燈 | ✅ |
+| AC3 | CI lint 通過 | 1. AC1 完成<br>2. 等待 CI 執行完成 | lint job 顯示綠燈 ✅，PR 頁面 checks 通過 | 同上，lint job 綠燈 | ✅ |
 | AC4 | CI 失敗阻擋 | 1. 在 feature branch 引入語法錯誤<br>2. push 至 GitHub<br>3. 嘗試 merge PR | GitHub PR 頁面顯示紅燈 ❌，merge 按鈕呈灰色無法點擊 | PR #11：lint job 顯示紅燈 ❌，`mergeable_state: blocked`（required status checks 未通過），T04 完成並勾選 no-bypass 後複測通過 | ✅ |
 | AC5 | Branch protection | 1. 本地切換至 main<br>2. 執行 `git push origin main` | GitHub 拒絕 push，終端機顯示 `GH006: Protected branch update failed` | 實測直接 push main，錯誤訊息完全吻合：`remote: error: GH006: Protected branch update failed for refs/heads/main.`（首次測試時 repo owner 帳號預設可繞過規則，勾選「Do not allow bypassing」後複測通過） | ✅ |
 | AC6 | Email 通知 | 1. 建立新 PR（title 含 `[ASUS-N]`）<br>2. 等待 5 分鐘 | SA Gmail 收到通知信，主旨含 `[ASUS 審核通知]`，內文含 PR 連結 | | ⬜ |
