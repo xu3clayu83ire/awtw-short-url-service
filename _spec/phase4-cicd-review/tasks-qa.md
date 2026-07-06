@@ -27,7 +27,7 @@
 | AC4 | CI 失敗阻擋 | 1. 在 feature branch 引入語法錯誤<br>2. push 至 GitHub<br>3. 嘗試 merge PR | GitHub PR 頁面顯示紅燈 ❌，merge 按鈕呈灰色無法點擊 | PR #11：lint job 顯示紅燈 ❌，`mergeable_state: blocked`（required status checks 未通過），T04 完成並勾選 no-bypass 後複測通過 | ✅ |
 | AC5 | Branch protection | 1. 本地切換至 main<br>2. 執行 `git push origin main` | GitHub 拒絕 push，終端機顯示 `GH006: Protected branch update failed` | 實測直接 push main，錯誤訊息完全吻合：`remote: error: GH006: Protected branch update failed for refs/heads/main.`（首次測試時 repo owner 帳號預設可繞過規則，勾選「Do not allow bypassing」後複測通過） | ✅ |
 | AC6 | Email 通知 | 1. 建立新 PR（title 含 `[ASUS-N]`）<br>2. 等待 5 分鐘 | SA Gmail 收到通知信，主旨含 `[ASUS 審核通知]`，內文含 PR 連結 | | ⬜ |
-| AC7 | build-docs 僅 main | 1. merge PR 進 main<br>2. 觀察 Actions 執行 | build-docs job 執行，Artifacts 欄位出現 `hugo-public`（feature branch push 時不執行） | | ⬜ |
+| AC7 | build-docs 僅 main | 1. merge PR 進 main<br>2. 觀察 Actions 執行 | build-docs job 執行，Artifacts 欄位出現 `hugo-public`（feature branch push 時不執行） | PR #14 merge 進 main 後，Actions 最新執行記錄出現 build-docs job，Artifacts 欄位確認有 `hugo-public` | ✅ |
 | AC8 | SA Review 流程 | 1. SA 在本地執行 `/addyosmani-review`<br>2. 至 GitHub PR 頁面 Approve | PR 頁面顯示 `Approved`，merge 按鈕可點擊 | PR #13：GitHub 不允許帳號核准自己開的 PR（422 Can not approve your own pull request），且 repo owner 的 bypass 權限連「required approvals: 1」也一併繞過，即使 0 個 approval 仍 merge 成功。單一帳號的 PoC 環境架構上無法驗證這條 | 🟡環境限制（非缺陷） |
 | AC9 | Feature branch 清理 | 1. SA Approve 後執行 merge<br>2. 至 GitHub repo → Branches 頁面 | feature branch 已自動刪除，不再出現於列表 | Repo Settings 尚未勾選「Automatically delete head branches」（需 Administration 權限，AI token 沒有，需使用者手動設定），目前 merge 後分支需手動/API 清理 | ⬜ 待手動設定 |
 
