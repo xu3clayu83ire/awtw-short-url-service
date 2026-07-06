@@ -175,6 +175,23 @@
 - **異動範圍**：`agent-runner/server.js`（三個 worktree 各自的複本都已同步更新，需手動重啟正在跑的 Node process 才會套用，git pull 不會讓已啟動的 process 拿到新程式碼）
 - **取捨**：這個 bug 屬於機率性重現（只有中文字元位元組剛好落在 chunk 邊界才會觸發），過去測試沒抓到不代表沒發生過，只是剛好之前的檔案內容或 payload 大小沒有踩中邊界；建議往後若又看到任務檔內容出現不明亂碼，優先懷疑是不是又有類似「串流資料逐段處理但用字串而非 Buffer 累積」的地方沒改到（例如 `/run` 端點的 `exec` callback 本身用的是 Node 內建 buffering，不受影響，但若未來新增其他串流讀寫端點要留意同樣的陷阱）
 
+### [2026-07-06] DevOps T04 Branch Protection — Free 私有 repo 限制，改公開 repo
+- **問題**：DevOps T04 要求設定 GitHub Branch Protection（含 required status checks），實測發現 GitHub 私有 repo 在 Free 方案下，不論新版 Rulesets 或舊版 Branch protection rules，都會顯示「won't be enforced ... until you move to a GitHub Team or Enterprise organization account」，規則設定了但不會真的生效
+- **選項**：A. 改成公開 repo（Free 方案下公開 repo 的 branch protection 功能完全免費且完整）/ B. 升級付費 GitHub Team 方案維持私有 / C. 接受降規格版（只留 PR review，不要求 required status checks），修改 spec.md 驗收條件 / D. 暫時跳過 T04，記錄為已知限制
+- **決定**：選項 A
+- **理由**：已確認 `.env`（存放 API tokens 等機密）從未被 git 追蹤、也從未出現在 commit 歷史裡，公開 repo 沒有機密外洩風險；比起長期為一個 PoC/demo 專案付費升級方案，或是讓驗收條件本身打折，直接公開是成本最低、又能完整達成原始 spec 意圖的做法
+- **驗證**：改公開後，Branch protection rule（Require PR、required status checks: test+lint、require branches up to date）設定成功且真正生效，AC4／AC5 複測皆通過（見 `_spec/phase4-cicd-review/tasks-qa.md`）
+- **後續發現**：啟用「Do not allow bypassing the above settings」後，`asus-notion-to-jira-hugo`（排程同步）原本直接 commit main 回填票號／同步 Hugo 文件的機制，會被同一條規則擋下失敗——因為排程與互動測試共用同一組 git 身份，bypass list 沒辦法只放行排程、不放行使用者本人
+- **決定（PoC 範圍取捨）**：這是一個 PoC，不引入獨立機器人帳號去精細區分「排程自動記帳」與「人工操作」，改為**保留 repo owner 帳號的 bypass 權限**（取消勾選 no-bypass），讓排程同步能繼續直接 commit main；main 上實際會走 PR 流程的只有 `asus-dev-workflow` 產出的功能程式碼，符合「有風險的程式碼變更要走 PR 審查、單純記帳性質的自動化可以例外」這個實質精神
+- **取捨**：AC5「main 擋得住直接 push」在嚴格意義上對 repo owner 帳號並不成立（owner 可以繞過），只對其他協作者/一般帳號的 push 有效；已在 `tasks-qa.md` 如實記錄這個範圍限制，不假裝完全達標
+
+### [2026-07-06] GitHub token 升級 Contents 寫入權限，取得完整 merge/刪分支能力
+- **問題**：先前 GitHub fine-grained PAT 只給了 Contents 唯讀權限，導致我可以建立 PR（Pull requests 權限本來就是 write）但無法 merge PR、無法刪除分支（兩者都需要 Contents:write，因為會實際異動 repo 內容/refs）
+- **決定**：使用者將既有 token 的 Contents 權限從 Read 改為 Read and write，不另外申請新 token
+- **理由**：這是一個 PoC，目標是展示「排程開票 → AI 開發 → 自動 PR → 自動 merge」整條鏈可以無人值守跑完的能力，值得讓 AI 直接完成 merge/清理分支這個最後一哩路，不用每次都停下來等人工點擊
+- **驗證**：PR #12 透過 API 直接 `PUT .../merge` 回傳 `HTTP 200 merged:true`；`test/ac4-ci-failure`、`test/ac4-retest`、`docs/ac4-ac5-qa-update` 三個測試分支透過 API `DELETE .../git/refs/heads/...` 全部回傳 `204`，確認 merge 與刪分支都已生效
+- **取捨**：往後每次 PR 完成後，若沒有特別要求人工先審查，會直接 merge＋清理分支，不再逐次詢問；如果之後想恢復「merge 前一定要人工看過」，需要使用者明確說明，屆時把 Contents 權限改回唯讀即可簡單復原
+
 ---
 
 ## API 設計決策
