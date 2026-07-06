@@ -6,3 +6,4 @@ __pycache__/
 node_modules/
 hugo-docs/public/
 hugo-docs/resources/
+agent-runner/*.log
