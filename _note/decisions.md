@@ -192,6 +192,13 @@
 - **驗證**：PR #12 透過 API 直接 `PUT .../merge` 回傳 `HTTP 200 merged:true`；`test/ac4-ci-failure`、`test/ac4-retest`、`docs/ac4-ac5-qa-update` 三個測試分支透過 API `DELETE .../git/refs/heads/...` 全部回傳 `204`，確認 merge 與刪分支都已生效
 - **取捨**：往後每次 PR 完成後，若沒有特別要求人工先審查，會直接 merge＋清理分支，不再逐次詢問；如果之後想恢復「merge 前一定要人工看過」，需要使用者明確說明，屆時把 Contents 權限改回唯讀即可簡單復原
 
+### [2026-07-06] 修正跨平台 rollup optional dependency 造成 CI test job 全紅
+- **問題**：QA 驗收 AC1-3 時發現 main 上最新的 GitHub Actions 執行記錄裡 `test` job 全部顯示紅燈，且執行時間異常短（僅 20 秒），本機在 Windows 上重跑 `npm ci` + `npm run test` 卻完全正常（27/27 通過），無法重現。使用者貼出實際錯誤訊息後才確診：`Cannot find module '@rollup/rollup-linux-x64-gnu'`，是 npm 已知 bug（[npm/cli#4828](https://github.com/npm/cli/issues/4828)）——`package-lock.json` 從專案最初 scaffold（commit `051b192`）就只在 Windows 上產生過，缺少 Linux 平台的 rollup 原生模組 optional dependency 條目，導致 GitHub Actions（`ubuntu-latest`）執行 `npm ci` 時裝不出對應的 Linux 版本模組，vitest（底層用 Vite/Rollup）直接掛掉
+- **決定**：刪除 `node_modules`／`package-lock.json`，重新 `npm install` 產生新的 lockfile（新 lockfile 含 57 筆各平台 rollup 條目），透過 PR #14 送出並 merge
+- **理由**：這類「本機正常、CI 才會炸」的問題，根源通常在 lockfile 或環境差異而非程式碼邏輯，且已知是 npm 生態圈的既有 bug，重新生成 lockfile 是官方建議的直接解法，不需要額外繞路（例如手動在 `optionalDependencies` 補平台套件）
+- **驗證**：PR #14 merge 後，使用者確認 GitHub Actions 最新一次執行 `test`／`lint` 皆為綠燈
+- **取捨**：這個 bug 存在的時間可能比這次才發現的更久（第一次 CI 真正因為程式碼被要求跑起來、且沒被 owner bypass 略過檢查結果，才第一次被人工目視發現），代表光靠「merge 沒被擋下」不能保證 CI 真的綠燈（owner bypass 連 required checks 沒過都能 merge，見上面兩筆決策）；之後如果懷疑 CI 品質，不能只看有沒有擋下 merge，要實際去 Actions 頁面確認顏色
+
 ---
 
 ## API 設計決策
