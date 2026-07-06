@@ -1,208 +1,46 @@
 # Phase 2 — n8n 自動化管線：Backend 任務清單
 
 > ⬜ 待執行　✅ 已完成
-> **注意**：本 Phase 任務是「建立管線本身」，直接用此文件勾選追蹤。
-> **執行環境**：n8n UI（Code 節點使用 JavaScript）
+>
+> **2026-07-06 重寫說明**：這份文件是原始逐節點設計（`tasks-backend-original-design.md`）的替代版本。原始設計把管線拆成一堆獨立小節點（冪等 IF、空任務 IF、切割 Code、開票節點、回填節點……），實際開發過程中因為多次實測發現設計缺口（見下方「異動原因」），2026-07-05 的「ADW 架構翻修」決策整個重新設計，最終落地為**單一個 n8n workflow**：`n8n-workflows/asus-notion-to-jira-hugo.json`（39 個節點）。這份文件記錄「實際做出來的功能」，不是可以逐條勾選施工進度的清單——因為施工當時就是直接在 n8n 裡整個重畫，不是照原始清單一格一格完成的。
 
 ---
 
-## 前置閱讀
+## 已完成功能
 
-執行前必讀：
-- `_spec/phase2-n8n-pipeline/spec.md`
-- `_spec/phase2-n8n-pipeline/design.md`（重點：節點清單、JS 程式碼、票面格式）
-- `_rule/coding-style.md`
+### 冪等與跨 Phase 開票防呆 ✅
+- **跨 Phase 順序防呆**（節點 `T03 Guard IF - Prev Phase Done`）：前一個 Phase 的 `Jira_Epic_Key` 未回填，不對下一個 Phase 開票
+- **任務層級冪等判斷**：不再只看 `Jira_Epic_Key` 是否為空，改成在任務標頭直接註記票號 `⬜(ASUS-97)`，區分「尚未開票」／「已開票未完成」／「已完成」三態（原始設計 T01/T02 這兩個獨立 IF 節點的功能，被整合進更精細的狀態判斷裡）
+- **任務依賴防呆**（節點 `T07 Split Tasks And Dependency Guard`）：任務區塊寫明 `依賴：T0X`，依賴的任務未完成就不會被開票（原始設計完全沒有這個機制）
 
-前置條件：
-- DevOps T01、T02 完成（Credential 已設定）
-- DevOps T03 完成（Notion Trigger 節點已建立）
+### Jira 開票邏輯 ✅
+- 直接讀取 `_spec/<slug>/tasks-backend.md`／`tasks-devops.md`／`tasks-qa.md` 原文、用正則切割任務區塊（節點 `T06`/`T06b`/`T06c`/`T07`），取代原設計「從 Notion `Tasks_To_Open` 簡化格式切割」——這樣 Jira 票就能保留任務的完整驗收條件與依賴資訊，不只是一行標題
+- Jira Task 開票（節點 `T13 Jira Create Issue`），票面 Description 包含：完整任務內容、Slug、TaskId（`<slug>#<sourceFile>#<taskId>` 格式，避免同編號跨檔案任務互相打架）、ExecMode（AI/手動）
+- 開票成功後回填票號到 `tasks-*.md` 原文（節點 `T14`-`T17c`），並自動 git commit——原始設計完全沒有回寫機制，Jira 票開完就跟來源文件斷連
+- `Jira_Epic_Key` 回填採「讀取現有值 → 合併去重 → 寫回」（節點 `T18`-`T20`），支援同一個 Phase 增量開票不會蓋掉先前票號，取代原設計的整批覆蓋寫入
 
----
+### PM/SA Notion 新增任務入口 ✅
+- Notion `Tasks_To_Open` 欄位改當「收件匣」：PM/SA 用簡化格式新增任務，n8n 偵測後自動編號、展開成完整任務區塊、寫入對應 `tasks-*.md`、格式錯誤時在 Notion 留言通知（節點 `T04`-`T04k`）——這是原始設計完全沒有的功能，是後來使用者指出「非工程角色沒有入口」才新增的
 
-## Phase 0 — 冪等與防呆機制（~30min）
-
-### T01 — 建立冪等檢查 IF 節點 ⬜
-
-**依賴**：DevOps T03
-
-在 Notion Trigger 節點之後新增 IF 節點：
-- **條件**：`{{ $json.properties.Jira_Epic_Key.rich_text.length }}` 等於 `0`
-- **True**（無值）→ 繼續往下
-- **False**（已有值）→ 接 No Operation 節點，寫入 log：`已有 Jira_Epic_Key，跳過`
-
-**TDD DoD**
-- 測試命名：`應該_跳過workflow_當Jira_Epic_Key已有值時`
-- 🔴 紅燈：未加 IF 前，重複觸發會往下執行
-- 🟢 綠燈：Test Step 輸入已有 `Jira_Epic_Key` 的資料，IF 走 False 分支停止
-- 覆蓋率：n8n Test Step 驗證
-
-**完成定義**：`Jira_Epic_Key` 有值時，Test Step 顯示走 False 分支
+### Hugo 文件同步 ✅
+- 每個 Phase 產出四篇文件：`_index.md`／`spec.md`／`design.md`／`tasks.md`（節點 `T09`-`T12`），取代原設計「只同步任務清單、看不到 SA 規格文件」
 
 ---
 
-### T02 — 建立空任務檢查 IF 節點 ⬜
+## 異動原因（對照 `_note/decisions.md`）
 
-**依賴**：T01
-
-在冪等 IF True 分支後新增第二個 IF 節點：
-- **條件**：`{{ $json.properties.Tasks_To_Open.rich_text.length }}` 大於 `0`
-- **True**（有內容）→ 繼續往下
-- **False**（為空）→ No Operation，寫入 log：`Tasks_To_Open 為空，中止`
-
-**TDD DoD**
-- 測試命名：`應該_中止workflow_當Tasks_To_Open為空時`
-- 🔴 紅燈：未加 IF 前，空 Tasks_To_Open 會導致後續節點錯誤
-- 🟢 綠燈：Test Step 輸入空 Tasks_To_Open，IF 走 False 分支停止
-- 覆蓋率：n8n Test Step 驗證
-
-**完成定義**：`Tasks_To_Open` 為空時，Test Step 顯示走 False 分支
+| 原始設計缺口 | 對應決策 |
+|---|---|
+| Jira 票是一次性快照，跟 tasks-*.md 斷連 | `ADW 架構翻修 — tasks-*.md 與 Jira 票雙向同步、Hugo 四篇文件` |
+| 冪等判斷只看空值，同 phase 增量開票會被覆蓋 | `支援 phase 開票後增量新增任務` |
+| 非工程角色沒有新增任務入口 | `PM/SA 透過 Notion 新增任務的入口設計`、`Notion 新增任務格式錯誤的回饋管道` |
+| 開票順序可能跨 Phase 錯亂 | `跨 Phase 開票順序保護規則`、`跨 Phase 開票順序防呆 — Notion Automation` |
+| Slug 解析靠猜路徑容易出錯 | `Spec_URL 用途修正 — 改用現成的 Slug 欄位` |
 
 ---
 
-## Phase 1 — 分流 A：Jira 開票（~1h）
+## 參考
 
-### T03 — 建立切割任務 Code 節點 ⬜
-
-**依賴**：T02
-
-新增 Code 節點（Run Once for Each Item），填入 design.md 的切割邏輯：
-
-```javascript
-const raw = $input.item.json.properties.Tasks_To_Open.rich_text
-  .map(t => t.plain_text).join('');
-
-const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-return lines.map(line => {
-  const [left, right] = line.split('｜TDD:');
-  const roleMatch = left.match(/^\[(.+?)\]/);
-  return {
-    json: {
-      role: roleMatch ? roleMatch[1] : 'Backend',
-      title: left.replace(/^\[.+?\]\s*/, '').trim(),
-      tdd: right ? right.trim() : '',
-      notionPageId: $input.item.json.id,
-      notionPageUrl: $input.item.json.url,
-      specUrl: $input.item.json.properties.Spec_URL?.url ?? '',
-      slug: $input.item.json.properties.Slug?.rich_text[0]?.plain_text ?? '',
-    }
-  };
-});
-```
-
-**TDD DoD**
-- 測試命名：`應該_正確切割成任務陣列_當Tasks_To_Open有兩行時`
-- 🔴 紅燈：Test Step 輸入 2 行任務，輸出仍為原始字串（未切割）
-- 🟢 綠燈：輸出為 2 個 JSON 物件，各含 `role`、`title`、`tdd` 欄位
-- 覆蓋率：n8n Test Step 驗證
-
-**完成定義**：Test Step 輸入 `[Backend] 任務A｜TDD: 測試A\n[DevOps] 任務B｜TDD: 測試B`，輸出 2 個物件
-
----
-
-### T04 — 建立 Jira Task 開票節點 ⬜
-
-**依賴**：T03
-
-新增 Jira Software 節點（Run Once for Each Item）：
-- **Credential**：`Jira - ASUS`
-- **Operation**：Create Issue
-- **Project**：`ASUS`
-- **Issue Type**：`Task`
-- **Summary**：`{{ $json.title }}`
-- **Description**（ADF 格式）：依 design.md 票面格式組裝
-
-Description 內容：
-```
-## 任務說明
-{{ $json.title }}
-
-## TDD 完成定義 (DoD)
-- [ ] 測試命名：`{{ $json.tdd }}`
-- [ ] 🔴 紅燈：測試必須先 Fail，截圖或終端機輸出為憑
-- [ ] 🟢 綠燈：實作後測試 Pass，覆蓋率 100%
-- [ ] 🔵 藍燈：重構完成，git commit 已執行
-
-## 規格來源
-- Notion：{{ $json.notionPageUrl }}
-- Spec：{{ $json.specUrl }}
-```
-
-**TDD DoD**
-- 測試命名：`應該_成功建立Jira票_當任務資料正確時`
-- 🔴 紅燈：Test Step 前，Jira ASUS 看板無對應票
-- 🟢 綠燈：Test Step 後，Jira 出現一張 Task 票，票面含完整 TDD DoD
-- 覆蓋率：Jira UI 驗證
-
-**完成定義**：Jira ASUS 看板出現測試票，Description 格式符合規範
-
----
-
-### T05 — 建立回填 Jira_Epic_Key Notion 節點 ⬜
-
-**依賴**：T04
-
-在 Jira 開票節點之後新增 Notion 節點：
-- **Operation**：Update Page
-- **Page ID**：`{{ $('切割任務').item.json.notionPageId }}`
-- **Property**：`Jira_Epic_Key` → `{{ $json.key }}`（Jira 節點回傳的票號，如 `ASUS-1`）
-
-**TDD DoD**
-- 測試命名：`應該_回填JiraKey到Notion_當Jira票建立成功時`
-- 🔴 紅燈：Test Step 前，Notion 主表 `Jira_Epic_Key` 欄位為空
-- 🟢 綠燈：Test Step 後，Notion 主表該筆資料 `Jira_Epic_Key` 填入票號（如 `ASUS-1`）
-- 覆蓋率：Notion UI 驗證
-
-**完成定義**：Notion 主表測試資料的 `Jira_Epic_Key` 欄位被自動填入
-
----
-
-## Phase 2 — 分流 B：Hugo 文件同步（~30min）
-
-### T06 — 建立 Hugo Front Matter 組裝 Code 節點 ⬜
-
-**依賴**：T02（與分流 A 並行，接在空任務 IF True 後）
-
-新增 Code 節點，填入 design.md 的組裝邏輯：
-
-```javascript
-const props = $input.item.json.properties;
-const title = props.Name.title[0]?.plain_text ?? '';
-const slug = props.Slug?.rich_text[0]?.plain_text ?? '';
-const weight = props.Weight?.number ?? 99;
-const body = props.Tasks_To_Open
-  ?.rich_text.map(t => t.plain_text).join('') ?? '';
-
-const content = `---
-title: "${title}"
-weight: ${weight}
----
-
-${body}
-`;
-
-return [{ json: { slug, content } }];
-```
-
-**TDD DoD**
-- 測試命名：`應該_產出正確FrontMatter_當Notion屬性完整時`
-- 🔴 紅燈：Test Step 前，輸出不含 `---` Front Matter 區塊
-- 🟢 綠燈：Test Step 後，輸出含 `title`、`weight` 的 YAML Front Matter
-- 覆蓋率：n8n Test Step 驗證
-
-**完成定義**：Test Step 輸出的 `content` 欄位包含正確 Front Matter 格式
-
----
-
-## Notion 開票格式
-
-> ⚠️ Phase 2 的 Backend 任務是在「建立」開票管線本身，留存備用。
-
-```
-[Backend] 建立冪等檢查 IF 節點｜TDD: 應該_跳過workflow_當Jira_Epic_Key已有值時
-[Backend] 建立空任務檢查 IF 節點｜TDD: 應該_中止workflow_當Tasks_To_Open為空時
-[Backend] 建立切割任務 Code 節點｜TDD: 應該_正確切割成任務陣列_當Tasks_To_Open有兩行時
-[Backend] 建立 Jira Task 開票節點｜TDD: 應該_成功建立Jira票_當任務資料正確時
-[Backend] 建立回填 Jira_Epic_Key Notion 節點｜TDD: 應該_回填JiraKey到Notion_當Jira票建立成功時
-[Backend] 建立 Hugo Front Matter 組裝 Code 節點｜TDD: 應該_產出正確FrontMatter_當Notion屬性完整時
-```
+- 完整節點清單、每個節點的 JS 邏輯：`n8n-workflows/asus-notion-to-jira-hugo.json`
+- 決策脈絡與實測過程：`_note/decisions.md`
+- 原始逐節點設計（僅供歷史對照，不代表現況）：`tasks-backend-original-design.md`

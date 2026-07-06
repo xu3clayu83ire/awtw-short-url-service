@@ -141,7 +141,7 @@ npm install
 
 ---
 
-### T03 — 安裝 ngrok 並設定 Jira Webhook ⬜
+### T03 — 安裝 ngrok 並設定 Jira Webhook ✅
 
 **依賴**：無（可與 T01 並行）
 
@@ -182,7 +182,7 @@ ngrok http 5678
 
 ---
 
-### T04 — 設定 n8n Credential ⬜
+### T04 — 設定 n8n Credential ✅
 
 **依賴**：T01
 

@@ -2,6 +2,8 @@
 
 > ⬜ 待執行　✅ 已完成
 > **注意**：本 Phase 任務是「建立管線本身」，尚無法用管線自動開票，直接用此文件勾選追蹤。
+>
+> **2026-07-06 更新**：以下狀態已對照實際 `n8n-workflows/asus-notion-to-jira-hugo.json`（39 節點）核實補上，內容本身跟實際節點大致仍對得起來，只有 T03 改用 Schedule Trigger 輪詢 + Notion Query（而非原生 Notion Trigger 節點）；管線本身完整的架構翻修記錄見 `_note/decisions.md`「ADW 架構翻修」條目，Backend 對應任務清單已依實際架構重寫（`tasks-backend.md`）。
 
 ---
 
@@ -21,7 +23,7 @@
 
 ## Phase 0 — n8n Credential 設定（~30min）
 
-### T01 — 設定 Notion Credential ⬜
+### T01 — 設定 Notion Credential ✅
 
 在 n8n 介面操作：
 1. 左側選單 → Credentials → Add Credential
@@ -39,7 +41,7 @@
 
 ---
 
-### T02 — 設定 Jira Credential ⬜
+### T02 — 設定 Jira Credential ✅
 
 **依賴**：無（可與 T01 並行）
 
@@ -63,7 +65,7 @@
 
 ## Phase 1 — Workflow 節點建置（~2h，依 Backend tasks 順序配合）
 
-### T03 — 建立 Notion Trigger 節點 ⬜
+### T03 — 建立 Notion Trigger 節點 ✅（改為 Schedule Trigger + Query，非 Notion Trigger 節點，見下方備註）
 
 **依賴**：T01
 
@@ -84,7 +86,7 @@
 
 ---
 
-### T04 — 建立 Write File 節點（分流 B 終點）⬜
+### T04 — 建立 Write File 節點（分流 B 終點）✅
 
 **依賴**：Backend T06
 
@@ -104,12 +106,12 @@
 
 ---
 
-### T05 — 匯出 Workflow JSON 並版控 ⬜
+### T05 — 匯出 Workflow JSON 並版控 ✅（實際檔名為 `asus-notion-to-jira-hugo.json`，2026-07-05 ADW→ASUS 更名決策一併套用）
 
 **依賴**：所有節點建置完成，Workflow 啟用後
 
 1. n8n 介面：Workflow → Download（匯出 JSON）
-2. 儲存至 `awtw-short-url-service/n8n-workflows/adw-notion-to-jira-hugo.json`
+2. 儲存至 `awtw-short-url-service/n8n-workflows/asus-notion-to-jira-hugo.json`
 3. git commit
 
 **TDD DoD**
