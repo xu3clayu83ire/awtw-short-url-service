@@ -114,3 +114,31 @@ Slug：<slug>
 - 敏感憑證設定（GitHub Secrets、n8n Credentials）
 - 外部服務 Webhook 註冊
 - 檔案匯出操作（n8n workflow JSON 匯出）
+
+---
+
+## Git Worktree 架構與分支規則
+
+本機同一份 repo 有三個 worktree（同一份 `.git` 歷史，三個獨立資料夾），彼此職責分開，避免自動化互搶工作目錄（見 `_note/decisions.md`「Agent Runner 獨立工作目錄」「asus-dev-workflow 改用獨立 worktree」兩筆決策）：
+
+| 資料夾 | 用途 | 誰在用 | 分支狀態 |
+|---|---|---|---|
+| `awtw-short-url-service` | **使用者互動用**，平常打開看的就是這份 | 使用者本人、Claude 與使用者對話時的操作 | 應**隨時同步到 origin/main 最新狀態**（可能是 detached HEAD，因為 `main` 這個分支名稱目前被下面的 `-agent` worktree 佔用；detached 不影響讀檔案，只影響「能不能直接在這裡 commit」） |
+| `awtw-short-url-service-agent` | 排程同步 workflow（`asus-notion-to-jira-hugo.json`）專用，直接 commit 到 main | 只有 n8n 排程會寫入，不應手動操作 | 固定 checkout 在 `main` 分支 |
+| `awtw-short-url-service-devrun` | Jira 觸發開發 workflow（`asus-dev-workflow.json`）專用，會頻繁切換 `feature/ASUS-N` 分支 | 只有 n8n Jira webhook 觸發時會寫入，不應手動操作 | 動態切換，執行完會停在某個 `feature/ASUS-N` 分支上，這是正常現象 |
+
+**規則：**
+
+1. **使用者只需要關心 `awtw-short-url-service` 這一份資料夾**，且應該永遠反映 origin/main 的最新內容。維護這個同步是 Claude 的責任，不需要使用者自己判斷目前在哪個分支。
+2. 每次 Claude 完成 merge 或推送 main 之後，若使用者的互動資料夾落後了，Claude 應主動同步，不用等使用者發現不對勁才處理。
+3. 使用者若想自行確認/強制同步，可在 `awtw-short-url-service` 資料夾執行：
+   ```
+   git status
+   ```
+   確認乾淨（無 `Changes not staged`）後，執行：
+   ```
+   git fetch origin main
+   git checkout --detach origin/main
+   ```
+   這兩行保證安全（不刪檔、不強制覆蓋、不動遠端），執行後資料夾內容必定與 GitHub main 一致。**若 `git status` 顯示有未儲存的變更，先不要執行第二步，找 Claude 確認怎麼處理。**
+4. `-agent`、`-devrun` 兩個資料夾使用者不需要打開、不需要理解，純粹是自動化的內部工作空間。
