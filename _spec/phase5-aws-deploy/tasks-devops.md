@@ -21,7 +21,7 @@
 
 ## Phase 0 — AWS CDK 初始化（~1h）
 
-### T01 — 安裝 AWS CDK 並執行 bootstrap ⬜　👤 手動執行
+### T01 — 安裝 AWS CDK 並執行 bootstrap ✅　👤 手動執行（沿用既有 `us-east-1` CDKToolkit，見 `_note/decisions.md`）
 
 ```bash
 npm install -g aws-cdk
