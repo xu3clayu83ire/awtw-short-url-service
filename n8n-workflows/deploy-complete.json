@@ -1,0 +1,128 @@
+{
+  "name": "deploy-complete",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "deploy-complete",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dc-node-001",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// CDK --outputs-file 產出格式：{ \"StackName\": { \"OutputKey\": \"OutputValue\", ... }, ... }\n// ApiStack/DocsStack 目前尚未定義實際 Output（T03/T04 待補），這裡用寬鬆比對：\n// 任何 stack 底下，key 名稱包含 Url（不分大小寫）的第一筆視為該類別的網址。\nconst body = $input.first().json.body ?? $input.first().json;\n\nfunction findUrl(stackNamePattern) {\n  for (const stackName of Object.keys(body)) {\n    if (!stackNamePattern.test(stackName)) continue;\n    const outputs = body[stackName] ?? {};\n    for (const key of Object.keys(outputs)) {\n      if (/url/i.test(key)) return outputs[key];\n    }\n  }\n  return '';\n}\n\nconst apiUrl = findUrl(/api/i);\nconst docsUrl = findUrl(/docs/i);\n\nreturn [{ json: { apiUrl, docsUrl } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "dc-node-002",
+      "name": "解析部署資訊"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "394577a0a41d811aaeb1e5ca5cc8ecb0",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Deploy_URL|url",
+              "urlValue": "={{ $json.apiUrl || $json.docsUrl }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "dc-node-003",
+      "name": "更新 Notion Deploy_URL",
+      "credentials": {
+        "notionApi": {
+          "id": "yqbs6rdfnHAnUZoM",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "prostyliu@gmail.com",
+        "toEmail": "prostyliu@gmail.com",
+        "subject": "[ASUS 部署完成通知] 短網址服務已上線",
+        "emailFormat": "text",
+        "text": "={{ '部署完成通知\\n\\nAPI URL：' + $('解析部署資訊').first().json.apiUrl + '\\n文件站 URL：' + $('解析部署資訊').first().json.docsUrl }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        660,
+        0
+      ],
+      "id": "dc-node-004",
+      "name": "Send Email",
+      "credentials": {
+        "smtp": {
+          "id": "SiUZzUaNdcJ1TihU",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "解析部署資訊",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析部署資訊": {
+      "main": [
+        [
+          {
+            "node": "更新 Notion Deploy_URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "更新 Notion Deploy_URL": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

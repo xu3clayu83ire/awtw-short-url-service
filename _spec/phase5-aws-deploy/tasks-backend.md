@@ -54,7 +54,7 @@
 
 ## Phase 1 — n8n 部署完成通知 Workflow（~1h）
 
-### T03 — 建立 n8n deploy-complete Webhook ⬜　🤖 AI 執行
+### T03 — 建立 n8n deploy-complete Webhook ✅　直接建置（基礎設施，不開票；用現成 Notion credential，省略 T04）
 
 **依賴**：DevOps T05
 
@@ -71,7 +71,7 @@
 
 ---
 
-### T04 — 設定 Notion API Credential ⬜　👤 手動執行
+### T04 — 設定 Notion API Credential ✅（省略，改用 Phase 2 既有 Notion 原生 credential，`n8n-nodes-base.notion` 節點已驗證可正常運作）
 
 **依賴**：T03
 
