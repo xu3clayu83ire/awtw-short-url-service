@@ -142,3 +142,21 @@ Slug：<slug>
    ```
    這兩行保證安全（不刪檔、不強制覆蓋、不動遠端），執行後資料夾內容必定與 GitHub main 一致。**若 `git status` 顯示有未儲存的變更，先不要執行第二步，找 Claude 確認怎麼處理。**
 4. `-agent`、`-devrun` 兩個資料夾使用者不需要打開、不需要理解，純粹是自動化的內部工作空間。
+
+---
+
+## GitHub 操作規則（PR 流程 vs 直接 commit）
+
+避免每次小改動都要走完整 PR 流程等待，區分兩種情況：
+
+| 變更類型 | 規則 |
+|---|---|
+| **純文件變更**（`.md`、`_note/`、`_spec/` 說明文字等，不影響 CI／系統行為） | 直接用 owner bypass 一次 `commit` + `push` 到 main，**不開 PR**，不用等 CI |
+| **程式碼／設定變更**（`.ts`、`test/*`、`package.json`、n8n workflow JSON 等會影響 CI 或系統行為的檔案） | 一律走完整 PR 流程：開分支 → 開 PR → 等 CI 過 → merge → （分支已設定 merge 後自動刪除，不用手動清） |
+
+判斷原則：**這個檔案的內容錯了，CI 測得出來嗎？** 測得出來（程式碼、測試、設定檔）就走 PR；測不出來（純文字說明）就直接 commit，省去不必要的等待。
+
+## GitHub API 操作工具
+
+- 目前這個環境**沒有安裝 GitHub MCP**，也沒有 `gh` CLI，所以是用 `curl` 直接打 GitHub REST API
+- 若已安裝 `gh` CLI（`winget install GitHub.cli`，安裝後執行 `gh auth login` 完成授權），優先改用 `gh pr create`／`gh pr merge`／`gh api` 等指令，比手動組 curl + 解析 JSON 更可靠、更少出錯
