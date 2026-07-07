@@ -89,7 +89,7 @@
 
 ---
 
-### T05 — 匯出 n8n Workflow JSON ⬜　👤 手動執行
+### T05 — 匯出 n8n Workflow JSON ✅（改用 n8n API 直接建立並匯出，`n8n-workflows/deploy-complete.json` 已 commit）
 
 **依賴**：T03、T04
 
