@@ -104,7 +104,7 @@ return [{
 
 ---
 
-### T05 — 匯出 n8n Workflow JSON ⬜　👤 手動執行
+### T05 — 匯出 n8n Workflow JSON ✅（改用 n8n API 直接建立，非手動 UI 拉節點）
 
 **依賴**：T02、T03、T04
 
