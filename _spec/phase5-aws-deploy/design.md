@@ -32,7 +32,7 @@ flowchart TD
     M --> N[PATCH Notion\nDeploy_URL 欄位]
     M --> O[Send Email\n部署完成通知]
 
-    subgraph AWS ap-northeast-1
+    subgraph AWS us-east-1
         F
         G
         H
@@ -187,7 +187,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ap-northeast-1
+          AWS_DEFAULT_REGION: us-east-1
         run: |
           cd cdk
           npx cdk deploy --all --require-approval never \
@@ -286,7 +286,7 @@ Hugo 文件站：https://<cloudfront-domain>
 
 | 風險 | 對策 |
 |------|------|
-| `cdk bootstrap` 未執行導致部署失敗 | DevOps T01 明確要求先執行 `cdk bootstrap ap-northeast-1` |
+| `cdk bootstrap` 未執行導致部署失敗 | DevOps T01 明確要求先執行 `cdk bootstrap us-east-1` |
 | IAM 權限不足（CDK 需要 CloudFormation / Lambda / DynamoDB / S3 / CloudFront 權限） | 使用 `AdministratorAccess` 管理用 IAM User（PoC 階段；正式環境需最小權限原則） |
 | ngrok 重啟導致 N8N_WEBHOOK_URL 失效 | 部署失敗時 curl 回傳非 200，CI log 顯示警告但不阻擋部署成功 |
 | DynamoDB 短碼碰撞 | 6 碼 58 字元 = 3.8 億組合，PoC 規模碰撞機率極低；正式環境需加碰撞偵測重試邏輯 |

@@ -36,7 +36,7 @@ Phase 4 完成後，main branch 已有人工審核與 CI 把關。Phase 5 的目
 - **成本**：DynamoDB On-demand 計費、Lambda 按需計費，PoC 期間預估月費 < $1 USD
 - **效能**：Lambda cold start 目標 < 1 秒；DynamoDB 查詢 < 50ms
 - **可觀測性**：CloudWatch Log Group 記錄 Lambda 執行 log
-- **AWS Region**：`ap-northeast-1`（東京）
+- **AWS Region**：`us-east-1`（北維吉尼亞，沿用既有 CDKToolkit bootstrap，見 `_note/decisions.md`）
 - **CDK 語言**：TypeScript
 - **Lambda Runtime**：Node.js 20.x
 

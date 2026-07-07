@@ -199,6 +199,20 @@
 - **驗證**：PR #14 merge 後，使用者確認 GitHub Actions 最新一次執行 `test`／`lint` 皆為綠燈
 - **取捨**：這個 bug 存在的時間可能比這次才發現的更久（第一次 CI 真正因為程式碼被要求跑起來、且沒被 owner bypass 略過檢查結果，才第一次被人工目視發現），代表光靠「merge 沒被擋下」不能保證 CI 真的綠燈（owner bypass 連 required checks 沒過都能 merge，見上面兩筆決策）；之後如果懷疑 CI 品質，不能只看有沒有擋下 merge，要實際去 Actions 頁面確認顏色
 
+### [2026-07-07] Phase 5 開發策略：拆分「基礎設施」與「短網址功能」，只有功能開發走 ASUS 開票流程
+- **背景**：Phase 4 的 QA 驗收耗費大量時間排查環境問題（GitHub 私有 repo 限制、rollup 跨平台 bug、單帳號 approve 限制等），使用者反思後指出：他的目標是先把整套 ASUS 工作流（開票→AI開發→PR→部署）建置完成，**只有在真正開發短網址功能本身時才需要走 Jira 開票驗證**，Phase 5 規格書卻把「部署管線基礎設施」（CDK 專案結構、GitHub Actions deploy stage、n8n 部署通知）跟「短網址功能本身」（Lambda 實作 `POST /api/shorten`、`GET /{code}`）混在同一個 phase 裡，逐票驗證會不必要地拖慢基礎設施建置速度
+- **決定**：Phase 5 拆成兩塊執行方式：
+  - **直接做，不開票**：DevOps T01（CDK bootstrap）、T02（CDK 專案結構）、T05（GitHub Actions deploy.yml）、T06（GitHub Actions Secrets）；Backend T03（n8n deploy-complete webhook）、T04（Notion API Credential）、T05（匯出 workflow JSON）——這些都是管線/基礎設施本身
+  - **走 ASUS Jira 開票流程**：Backend T01（`POST /api/shorten`）、T02（`GET /{code}`）；DevOps T03（ApiStack：Lambda+APIGateway+DynamoDB）、T04（DocsStack：S3+CloudFront）——雖然 T03/T04 技術上是 CDK 程式碼，但它們是短網址功能實際運作所需的容器，跟 Backend T01/T02 綁在一起才有意義，歸類進「功能開發」一組
+- **理由**：管線基礎設施本身不是這個 PoC 想驗證的對象（那是 Phase 2/3 已經驗證過的 ASUS pipeline 本身），重複用 Jira 開票流程建置基礎設施只是徒增等待時間，沒有額外驗證價值；真正的短網址功能開發才是「用 ASUS pipeline 開發新功能」這件事本身要驗證的場景
+- **取捨**：直接做的部分不會留下 Jira 票號、不會被 `tasks-*.md` 的冪等機制追蹤，純粹用 `tasks-devops.md`／`tasks-backend.md` 手動勾選 ✅ 追蹤進度，之後若要回頭稽核「這些是誰在什麼時候做的」，只能查 git commit 歷史，不像功能開發部分有 Jira 票可查
+
+### [2026-07-07] Phase 5 AWS Region 改為 us-east-1
+- **問題**：spec.md 原訂 AWS Region 為 `ap-northeast-1`（東京），但實測發現該帳號在 `ap-northeast-1` 尚未執行過 `cdk bootstrap`（無 `CDKToolkit` CloudFormation Stack），而 `us-east-1` 已經有現成的 `CDKToolkit`（2026-04-08 建立，應是先前其他專案留下）
+- **決定**：Phase 5 全面改用 `us-east-1`，沿用既有 bootstrap，不在 `ap-northeast-1` 重新設定
+- **理由**：這是 PoC，不需要堅持特定 region 的低延遲考量；沿用既有 bootstrap 可以少跑一次 `cdk bootstrap`，且避免帳號裡累積多個 region 的 CDKToolkit 資源
+- **異動範圍**：`_spec/phase5-aws-deploy/spec.md`／`design.md`／`tasks-devops.md` 所有 `ap-northeast-1` 字樣改為 `us-east-1`
+
 ---
 
 ## API 設計決策

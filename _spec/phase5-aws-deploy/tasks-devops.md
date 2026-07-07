@@ -25,7 +25,7 @@
 
 ```bash
 npm install -g aws-cdk
-cdk bootstrap aws://ACCOUNT_ID/ap-northeast-1
+cdk bootstrap aws://ACCOUNT_ID/us-east-1
 ```
 
 > 👤 手動原因：一次性 AWS 環境初始化，需本機 AWS CLI 憑證，無程式碼產出。
