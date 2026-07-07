@@ -35,7 +35,7 @@ cdk bootstrap aws://ACCOUNT_ID/us-east-1
 
 ---
 
-### T02 — 建立 CDK 專案結構 ⬜　🤖 AI 執行
+### T02 — 建立 CDK 專案結構 ✅　直接建置（基礎設施，不開票）
 
 **依賴**：T01
 
