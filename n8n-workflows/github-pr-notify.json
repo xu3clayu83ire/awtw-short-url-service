@@ -1,0 +1,78 @@
+{
+  "name": "github-pr-notify",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-pr",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ghpn-node-001",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 對應 src/github-pr-notify.ts 的邏輯（inline 版本，n8n Code node 無法 import repo 檔案）\nconst payload = $input.first().json.body ?? $input.first().json;\nconst pr = payload.pull_request ?? {};\n\nconst titleMatch = typeof pr.title === 'string' ? pr.title.match(/\\[([A-Z]+-\\d+)\\]/) : null;\nconst jiraKey = titleMatch ? titleMatch[1] : '（無票號）';\nconst prTitle = typeof pr.title === 'string' ? pr.title : '';\nconst prUrl = typeof pr.html_url === 'string' ? pr.html_url : '';\nconst prNumber = typeof pr.number === 'number' || typeof pr.number === 'string' ? pr.number : '';\nconst branch = pr.head && typeof pr.head.ref === 'string' ? pr.head.ref : '';\nconst author = pr.user && typeof pr.user.login === 'string' ? pr.user.login : '';\n\nconst description = prTitle.replace(/^\\[[A-Z]+-\\d+\\]\\s*/, '').trim() || prTitle;\nconst emailSubject = '[ASUS 審核通知] [' + jiraKey + '] ' + description;\n\nconst emailBody = [\n  '新 PR 待審核',\n  '',\n  '票號：' + jiraKey,\n  '功能：' + prTitle,\n  '分支：' + branch + ' → main',\n  'PR 連結：' + prUrl,\n  '作者：' + author,\n  '',\n  '請執行 /addyosmani-review 後至 GitHub 頁面 Approve。',\n].join('\\n');\n\nreturn [{\n  json: {\n    jiraKey, prTitle, prUrl, prNumber, branch, author,\n    emailSubject, emailBody,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "ghpn-node-002",
+      "name": "解析 PR 資訊"
+    },
+    {
+      "parameters": {
+        "fromEmail": "TODO-SA-GMAIL@gmail.com",
+        "toEmail": "TODO-SA-EMAIL@example.com",
+        "subject": "={{ $json.emailSubject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        440,
+        0
+      ],
+      "id": "ghpn-node-003",
+      "name": "Send Email"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "解析 PR 資訊",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析 PR 資訊": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
